@@ -1,5 +1,6 @@
 // Shared helpers. Zero dependencies.
 const fs = require("fs");
+const path = require("path");
 
 const readJson = (f) => JSON.parse(fs.readFileSync(f, "utf8"));
 
@@ -11,6 +12,21 @@ const loc = (code) =>
       const t = l.trim();
       return t && !t.startsWith("#");
     }).length;
+
+// LOC of every .py file under a job dir, ignoring the hidden tests and conftest.
+function dirLoc(dir) {
+  let n = 0;
+  const walk = (d) => {
+    for (const e of fs.readdirSync(d, { withFileTypes: true })) {
+      if (e.name === "_grade" || e.name === "conftest.py" || e.name === "out.xml") continue;
+      const p = path.join(d, e.name);
+      if (e.isDirectory()) walk(p);
+      else if (p.endsWith(".py")) n += loc(fs.readFileSync(p, "utf8"));
+    }
+  };
+  walk(dir);
+  return n;
+}
 
 const median = (a) => {
   const s = [...a].sort((x, y) => x - y);
@@ -35,4 +51,4 @@ const round = (x, d = 2) => {
   return Math.round(x * p) / p;
 };
 
-module.exports = { readJson, loc, median, necessaryFor, costOf, round };
+module.exports = { readJson, loc, dirLoc, median, necessaryFor, costOf, round };

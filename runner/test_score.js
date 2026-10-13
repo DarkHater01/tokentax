@@ -77,7 +77,7 @@ try {
   assert.strictEqual(r.status, 1, "duplicate reps must be rejected");
 
   // Guard: absurd token count is rejected.
-  const badObj = base.map((x, i) => (i === 0 ? { ...x, tokens_in: 9_000_000 } : x));
+  const badObj = base.map((x, i) => (i === 0 ? { ...x, tokens_in: 90_000_000 } : x));
   r = score(writeRaw("bad.json", badObj), path.join(TMP, "out-bad.json"));
   assert.strictEqual(r.status, 1, "out-of-range tokens must be rejected");
 

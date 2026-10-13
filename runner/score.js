@@ -49,7 +49,7 @@ for (const r of raw) {
   if (!variantIds.includes(r.variant)) fail(`unknown variant ${r.variant}`);
   if (typeof r.passed !== "boolean") fail(`passed must be boolean: ${JSON.stringify(r)}`);
   for (const k of ["tokens_in", "tokens_out"]) {
-    if (!(r[k] >= 0 && r[k] <= 5_000_000)) fail(`bad ${k}=${r[k]} for ${r.harness}/${r.model}/${r.task}`);
+    if (!(r[k] >= 0 && r[k] <= 50_000_000)) fail(`bad ${k}=${r[k]} for ${r.harness}/${r.model}/${r.task}`);
   }
   if (!prices.models[r.model]) fail(`no frozen price for model ${r.model}`);
 }

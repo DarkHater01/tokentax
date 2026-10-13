@@ -1,0 +1,38 @@
+name: weekly-bench
+
+# Regenerates data/ every Monday. Requires the OPENROUTER_API_KEY secret;
+# without it the job exits cleanly so the schedule does not turn the repo red.
+on:
+  schedule:
+    - cron: "0 6 * * 1" # Mondays 06:00 UTC
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  bench:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Run benchmark
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+        run: |
+          if [ -z "$OPENROUTER_API_KEY" ]; then
+            echo "OPENROUTER_API_KEY secret not set; skipping the live run."
+            exit 0
+          fi
+          node runner/run.js
+          node runner/score.js || TOKENTAX_PARTIAL=1 node runner/score.js
+          git config user.name "tokentax-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add data/
+          git diff --cached --quiet || git commit -m "chore: weekly benchmark results"
+          git push

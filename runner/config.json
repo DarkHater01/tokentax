@@ -2,16 +2,14 @@
   "reps": 5,
   "max_turns": 25,
   "max_tokens": 200000,
+  "pass_timeout_seconds": 50,
   "qualify_threshold": 0.6,
-  "note": "LIVE config. M1 implements fixture models only; real agent harnesses land in M2. For the offline smoke test use runner/config.mock.json (see README).",
+  "openrouter_base": "https://openrouter.ai/api/v1",
+  "note": "LIVE config. Add models with a frozen price in runner/prices.json. Only the 'mini-loop' harness is implemented; opencode/claude-code headless land in M3. For the offline smoke test use runner/config.mock.json.",
   "variants": {
     "vanilla": "You are an expert Python developer. Solve the task exactly as specified.",
     "minimal": "Write the least Python that fully satisfies the spec. Standard library only. No classes, no abstractions, no comments beyond the spec, no error handling beyond what the spec requires. Output only the code."
   },
-  "harnesses": [
-    { "id": "mini-loop", "overhead": 1.0 },
-    { "id": "opencode-headless" },
-    { "id": "claude-code-headless" }
-  ],
+  "harnesses": [{ "id": "mini-loop" }],
   "models": []
 }
