@@ -77,13 +77,14 @@ function pytest(jobDir, timeoutS, args = []) {
     "--tmpfs", "/tmp:rw,size=64m,mode=1777",
     "--security-opt", "no-new-privileges",
     "--cap-drop", "ALL",
-    "--user", "1000:1000",
+    "--user", `${typeof process.getuid === "function" ? process.getuid() : 1000}:${typeof process.getgid === "function" ? process.getgid() : 1000}`,
+    "-e", "HOME=/tmp",
     "-e", "PYTHONPATH=/job",
     "-e", "PYTHONDONTWRITEBYTECODE=1",
     "-v", `${jobDir}:/job`,
     "-w", "/job",
     IMAGE,
-    "timeout", String(timeoutS), "python", "-m", "pytest", "-q", "--junitxml=out.xml", ...args,
+    "timeout", String(timeoutS), "python", "-m", "pytest", "-q", "-p", "no:cacheprovider", "--junitxml=out.xml", ...args,
   ];
   const r = spawnSync("docker", dockerArgs, { encoding: "utf8", env: safeEnv(), timeout: (timeoutS + 25) * 1000 });
   if (r.error) fail(`docker: ${r.error.message}`);
