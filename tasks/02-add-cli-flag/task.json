@@ -1,0 +1,6 @@
+{
+  "id": "02-add-cli-flag",
+  "language": "python",
+  "entry": "solution.py",
+  "hidden_tests": "tests/test_solution.py"
+}

@@ -1,0 +1,4 @@
+{
+  "steps": ["read task.md", "read the parser", "add the flag", "run the tests"],
+  "necessary_tokens": { "default": 520 }
+}

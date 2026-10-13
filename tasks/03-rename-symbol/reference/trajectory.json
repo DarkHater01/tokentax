@@ -1,0 +1,4 @@
+{
+  "steps": ["read task.md", "grep the old name", "rename in both files", "run the tests"],
+  "necessary_tokens": { "default": 700 }
+}

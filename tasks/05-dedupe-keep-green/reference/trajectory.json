@@ -1,0 +1,4 @@
+{
+  "steps": ["read task.md", "read the module", "extract the shared helper", "run the tests"],
+  "necessary_tokens": { "default": 780 }
+}

@@ -1,0 +1,26 @@
+{
+  "model": "mock-lean",
+  "note": "Base tokens per (task,variant). harness.overhead scales them. pass:false = every rep fails.",
+  "tasks": {
+    "01-fix-failing-test": {
+      "vanilla": { "in": 1500, "out": 200, "turns": 3, "tool_calls": 4, "thrash": 0, "loc": 12, "pass": true },
+      "minimal": { "in": 1200, "out": 160, "turns": 3, "tool_calls": 3, "thrash": 0, "loc": 9, "pass": true }
+    },
+    "02-add-cli-flag": {
+      "vanilla": { "in": 1100, "out": 150, "turns": 3, "tool_calls": 3, "thrash": 0, "loc": 10, "pass": true },
+      "minimal": { "in": 900, "out": 120, "turns": 2, "tool_calls": 2, "thrash": 0, "loc": 7, "pass": true }
+    },
+    "03-rename-symbol": {
+      "vanilla": { "in": 1600, "out": 220, "turns": 4, "tool_calls": 5, "thrash": 1, "loc": 14, "pass": true },
+      "minimal": { "in": 1300, "out": 180, "turns": 3, "tool_calls": 4, "thrash": 1, "loc": 11, "pass": true }
+    },
+    "04-fix-bug-2-files": {
+      "vanilla": { "in": 1200, "out": 160, "turns": 3, "tool_calls": 4, "thrash": 0, "loc": 13, "pass": true },
+      "minimal": { "in": 1000, "out": 130, "turns": 3, "tool_calls": 3, "thrash": 0, "loc": 10, "pass": true }
+    },
+    "05-dedupe-keep-green": {
+      "vanilla": { "in": 1900, "out": 260, "turns": 5, "tool_calls": 6, "thrash": 1, "loc": 22, "pass": true },
+      "minimal": { "in": 1500, "out": 200, "turns": 4, "tool_calls": 5, "thrash": 1, "loc": 16, "pass": true }
+    }
+  }
+}

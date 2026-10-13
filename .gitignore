@@ -1,0 +1,5 @@
+runner/tmp/
+data/raw.json
+data/raw.mock.json
+data/results.mock.json
+node_modules/

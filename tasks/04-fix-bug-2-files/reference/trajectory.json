@@ -1,0 +1,4 @@
+{
+  "steps": ["read task.md", "read both files", "write the fix", "run the tests"],
+  "necessary_tokens": { "default": 560 }
+}

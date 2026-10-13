@@ -1,0 +1,17 @@
+{
+  "reps": 5,
+  "max_turns": 25,
+  "max_tokens": 200000,
+  "qualify_threshold": 0.6,
+  "note": "LIVE config. M1 implements fixture models only; real agent harnesses land in M2. For the offline smoke test use runner/config.mock.json (see README).",
+  "variants": {
+    "vanilla": "You are an expert Python developer. Solve the task exactly as specified.",
+    "minimal": "Write the least Python that fully satisfies the spec. Standard library only. No classes, no abstractions, no comments beyond the spec, no error handling beyond what the spec requires. Output only the code."
+  },
+  "harnesses": [
+    { "id": "mini-loop", "overhead": 1.0 },
+    { "id": "opencode-headless" },
+    { "id": "claude-code-headless" }
+  ],
+  "models": []
+}

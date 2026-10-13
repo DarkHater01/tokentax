@@ -1,0 +1,9 @@
+{
+  "asof": "2026-10-13",
+  "unit": "USD per 1M tokens",
+  "note": "Frozen snapshot. Prices drift; update by PR and bump 'asof'. See docs/adr/ADR-001-metric.md.",
+  "models": {
+    "mock-lean": { "in": 1.0, "out": 3.0 },
+    "mock-bloated": { "in": 1.0, "out": 3.0 }
+  }
+}

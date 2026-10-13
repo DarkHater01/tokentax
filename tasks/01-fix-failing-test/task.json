@@ -1,0 +1,6 @@
+{
+  "id": "01-fix-failing-test",
+  "language": "python",
+  "entry": "solution.py",
+  "hidden_tests": "tests/test_solution.py"
+}

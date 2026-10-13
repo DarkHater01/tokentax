@@ -1,0 +1,19 @@
+{
+  "reps": 3,
+  "max_turns": 25,
+  "max_tokens": 200000,
+  "qualify_threshold": 0.6,
+  "note": "Offline mock config. Fixture models read canned token counts; harness.overhead scales them to fake the 'same model, fatter harness' axis. No API key, no Docker.",
+  "variants": {
+    "vanilla": "You are an expert Python developer. Solve the task exactly as specified.",
+    "minimal": "Write the least Python that fully satisfies the spec. Standard library only. No classes, no abstractions, no comments beyond the spec, no error handling beyond what the spec requires. Output only the code."
+  },
+  "harnesses": [
+    { "id": "mini-loop", "overhead": 1.0 },
+    { "id": "fat-harness", "overhead": 2.4 }
+  ],
+  "models": [
+    { "id": "mock-lean", "fixture": "mock-lean" },
+    { "id": "mock-bloated", "fixture": "mock-bloated" }
+  ]
+}
