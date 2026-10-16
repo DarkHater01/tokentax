@@ -24,13 +24,19 @@ async function chat({ base, key, model, messages, tools, temperature = 0.2, maxR
         await new Promise((r) => setTimeout(r, 15_000));
         continue;
       }
-      if (!res.ok) throw new Error(`OpenRouter ${res.status} for ${model}: ${(await res.text()).slice(0, 300)}`);
+      if (!res.ok) {
+        const err = new Error(`OpenRouter ${res.status} for ${model}: ${(await res.text()).slice(0, 300)}`);
+        err.noRetry = true; // 4xx (auth, bad request) will not fix itself
+        throw err;
+      }
       const json = await res.json();
       const message = json.choices?.[0]?.message;
       if (!message) throw new Error(`empty completion from ${model}`);
       return { message, usage: json.usage || {} };
     } catch (e) {
-      if (attempt === maxRetries) throw new Error(`OpenRouter request failed for ${model}: ${e.message}`);
+      if (attempt === maxRetries || e.noRetry) {
+        throw new Error(`OpenRouter request failed for ${model}: ${e.message}`);
+      }
       await new Promise((r) => setTimeout(r, 15_000));
     } finally {
       clearTimeout(timer);

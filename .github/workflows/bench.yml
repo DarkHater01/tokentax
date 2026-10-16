@@ -43,6 +43,7 @@ jobs:
 
           if [ "$MODE" = "smoke" ]; then
             echo "SMOKE: one model, one rep, all tasks x variants."
+            if [ -z "$OPENROUTER_API_KEY" ]; then echo "KEY EMPTY/UNSET"; else echo "key length: ${#OPENROUTER_API_KEY}"; fi
             TOKENTAX_CONFIG=runner/config.smoke.json \
             TOKENTAX_RAW=data/raw.smoke.json \
             TOKENTAX_OUT=data/results.smoke.json \
