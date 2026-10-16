@@ -29,7 +29,7 @@ async function chat({
   maxRetries = 6,
   timeoutMs = 180_000,
   baseDelayMs = 3_000,
-  maxDelayMs = 45_000,
+  maxDelayMs = 65_000,
 }) {
   const p = PROVIDERS[provider];
   if (!p) throw new Error(`unknown provider: ${provider}`);
@@ -58,15 +58,31 @@ async function chat({
       });
 
       if (RETRYABLE(res.status)) {
+        // The provider states the exact limit (RPM/TPM/daily) in the body and in
+        // x-ratelimit-* headers. Without them a 429 is just a mystery wall.
+        const detail = (await res.text().catch(() => "")).slice(0, 400);
+        const limits = [
+          "retry-after",
+          "x-ratelimit-limit-requests",
+          "x-ratelimit-remaining-requests",
+          "x-ratelimit-limit-tokens",
+          "x-ratelimit-remaining-tokens",
+          "x-ratelimit-reset-tokens",
+        ]
+          .map((h) => (res.headers.get(h) ? `${h}=${res.headers.get(h)}` : null))
+          .filter(Boolean)
+          .join(" ");
         if (attempt === maxRetries) {
-          throw new Error(`${provider} ${res.status} for ${model} after ${maxRetries} attempts`);
+          throw new Error(
+            `${provider} ${res.status} for ${model} after ${maxRetries} attempts${limits ? ` [${limits}]` : ""}: ${detail}`
+          );
         }
         const retryAfter = parseFloat(res.headers.get("retry-after"));
         const backoff = Math.min(maxDelayMs, baseDelayMs * 2 ** (attempt - 1));
         const wait =
           (Number.isFinite(retryAfter) ? Math.min(retryAfter * 1000, maxDelayMs) : backoff) *
           (0.7 + Math.random() * 0.6);
-        console.error(`   ${res.status} on ${model}, retry ${attempt}/${maxRetries} in ${(wait / 1000).toFixed(1)}s`);
+        console.error(`   ${res.status} on ${model}, retry ${attempt}/${maxRetries} in ${(wait / 1000).toFixed(1)}s: ${detail}`);
         await new Promise((r) => setTimeout(r, wait));
         continue;
       }
