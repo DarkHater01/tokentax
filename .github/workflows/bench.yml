@@ -43,7 +43,13 @@ jobs:
 
           if [ "$MODE" = "smoke" ]; then
             echo "SMOKE: one model, one rep, all tasks x variants."
-            if [ -z "$OPENROUTER_API_KEY" ]; then echo "KEY EMPTY/UNSET"; else echo "key length: ${#OPENROUTER_API_KEY}"; fi
+            k="$OPENROUTER_API_KEY"
+            echo "len=${#k}"
+            case "$k" in sk-or-*) echo "prefix=sk-or-";; *) echo "prefix=OTHER (not an OpenRouter key?)";; esac
+            if printf '%s' "$k" | grep -qE '^[A-Za-z0-9_.-]+$'; then echo "charset=OK"; else echo "charset=HAS-WHITESPACE-OR-QUOTES"; fi
+            curl -s -o /tmp/or.json -w "openrouter /key -> HTTP %{http_code}\n" \
+              https://openrouter.ai/api/v1/key -H "Authorization: Bearer $k"
+            echo "body: $(head -c 200 /tmp/or.json)"
             TOKENTAX_CONFIG=runner/config.smoke.json \
             TOKENTAX_RAW=data/raw.smoke.json \
             TOKENTAX_OUT=data/results.smoke.json \
