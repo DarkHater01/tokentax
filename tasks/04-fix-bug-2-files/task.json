@@ -1,6 +1,4 @@
 {
   "id": "04-fix-bug-2-files",
-  "language": "python",
-  "entry": "solution.py",
-  "hidden_tests": "tests/test_solution.py"
+  "language": "python"
 }

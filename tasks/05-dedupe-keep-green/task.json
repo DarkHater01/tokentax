@@ -1,6 +1,4 @@
 {
   "id": "05-dedupe-keep-green",
-  "language": "python",
-  "entry": "solution.py",
-  "hidden_tests": "tests/test_solution.py"
+  "language": "python"
 }

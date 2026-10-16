@@ -1,6 +1,6 @@
 {
   "reps": 1,
-  "max_turns": 12,
+  "max_turns": 25,
   "max_tokens": 200000,
   "pass_timeout_seconds": 50,
   "qualify_threshold": 0.6,

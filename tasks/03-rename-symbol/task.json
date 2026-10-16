@@ -1,6 +1,4 @@
 {
   "id": "03-rename-symbol",
-  "language": "python",
-  "entry": "solution.py",
-  "hidden_tests": "tests/test_solution.py"
+  "language": "python"
 }

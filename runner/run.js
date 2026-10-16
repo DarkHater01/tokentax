@@ -50,6 +50,20 @@ function listTasks() {
     .sort();
 }
 
+// The agent has no way to look around, and task.md deliberately does not name
+// the files. Without this it guesses a filename and burns its whole turn budget,
+// which measures the harness's blindness instead of the model.
+function listJobFiles(dir, base = dir) {
+  return fs
+    .readdirSync(dir, { withFileTypes: true })
+    .filter((e) => !["_grade", "conftest.py", "out.xml"].includes(e.name))
+    .flatMap((e) => {
+      const p = path.join(dir, e.name);
+      return e.isDirectory() ? listJobFiles(p, base) : [path.relative(base, p)];
+    })
+    .sort();
+}
+
 async function main() {
   if (liveModels.length) sandbox.ensureImage();
   fs.mkdirSync(path.dirname(RAW), { recursive: true });
@@ -99,8 +113,9 @@ async function main() {
                 };
               } else {
                 const job = sandbox.prepareJob(taskDir);
+                const prompt = `${taskMd}\n\nWorkspace files:\n${listJobFiles(job).map((f) => `- ${f}`).join("\n")}`;
                 const chat = (messages, tools) => chatApi.chat({ provider, model: model.id, messages, tools });
-                const r = await HARNESSES[harness.id].run({ job, taskMd, system, cfg, chat, sandbox });
+                const r = await HARNESSES[harness.id].run({ job, taskMd: prompt, system, cfg, chat, sandbox });
                 const grade = sandbox.pytest(job, cfg.pass_timeout_seconds, ["_grade"]);
                 const locVal = dirLoc(job);
                 sandbox.cleanup(job);
