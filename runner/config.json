@@ -5,11 +5,16 @@
   "pass_timeout_seconds": 50,
   "qualify_threshold": 0.6,
   "openrouter_base": "https://openrouter.ai/api/v1",
-  "note": "LIVE config. Add models with a frozen price in runner/prices.json. Only the 'mini-loop' harness is implemented; opencode/claude-code headless land in M3. For the offline smoke test use runner/config.mock.json.",
+  "note": "LIVE config. Models are 'free' endpoints proven to work (same IDs slopbench ran and produced results with). Free endpoints are rate-limited and cost $0; add paid models with real prices in runner/prices.json to make the $ column meaningful. Only the 'mini-loop' harness is implemented; opencode/claude-code headless land in M3.",
   "variants": {
     "vanilla": "You are an expert Python developer. Solve the task exactly as specified.",
     "minimal": "Write the least Python that fully satisfies the spec. Standard library only. No classes, no abstractions, no comments beyond the spec, no error handling beyond what the spec requires. Output only the code."
   },
   "harnesses": [{ "id": "mini-loop" }],
-  "models": []
+  "models": [
+    { "id": "poolside/laguna-s-2.1:free" },
+    { "id": "poolside/laguna-xs-2.1:free" },
+    { "id": "nvidia/nemotron-3-ultra-550b-a55b:free" },
+    { "id": "nvidia/nemotron-3.5-lightning:free" }
+  ]
 }

@@ -1,8 +1,12 @@
 {
-  "asof": "2026-10-13",
+  "asof": "2026-10-16",
   "unit": "USD per 1M tokens",
-  "note": "Frozen snapshot. Prices drift; update by PR and bump 'asof'. See docs/adr/ADR-001-metric.md.",
+  "note": "Frozen snapshot. ':free' endpoints cost $0 and are rate-limited, so the $ column reads 0 until paid models are added; the headline metric (tax) is unaffected. Update by PR and bump 'asof'. See docs/adr/ADR-001-metric.md.",
   "models": {
+    "poolside/laguna-s-2.1:free": { "in": 0, "out": 0 },
+    "poolside/laguna-xs-2.1:free": { "in": 0, "out": 0 },
+    "nvidia/nemotron-3-ultra-550b-a55b:free": { "in": 0, "out": 0 },
+    "nvidia/nemotron-3.5-lightning:free": { "in": 0, "out": 0 },
     "mock-lean": { "in": 1.0, "out": 3.0 },
     "mock-bloated": { "in": 1.0, "out": 3.0 }
   }
