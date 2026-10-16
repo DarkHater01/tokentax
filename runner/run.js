@@ -17,7 +17,6 @@ const RAW = process.env.TOKENTAX_RAW
 
 const cfg = require(CFG_PATH);
 const HARNESSES = { "mini-loop": require("./harnesses/mini-loop") };
-const PACE_MS = Number(process.env.TOKENTAX_PACE_MS ?? cfg.pace_ms ?? 0);
 
 function fail(msg) {
   console.error(`run.js: ${msg}`);
@@ -116,6 +115,9 @@ async function main() {
                   tail: grade.passed ? "" : grade.tail,
                 };
               }
+              console.log(
+                `   -> ${rec.passed ? "PASS" : "FAIL"} in=${rec.tokens_in} out=${rec.tokens_out} turns=${rec.turns} tools=${rec.tool_calls} thrash=${rec.thrash}`
+              );
               raw.push({ harness: harness.id, model: model.id, task: task.id, variant, rep, error: null, ...rec });
             } catch (e) {
               raw.push({
@@ -136,7 +138,6 @@ async function main() {
               console.error(`   error: ${e.message}`);
             }
             fs.writeFileSync(RAW, JSON.stringify(raw, null, 2));
-            if (PACE_MS > 0) await new Promise((r) => setTimeout(r, PACE_MS));
           }
         }
       }

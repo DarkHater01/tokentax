@@ -108,7 +108,7 @@ node runner/run.js      # model × task × harness × rep -> data/raw.json
 node runner/score.js    # data/raw.json -> data/results.json
 ```
 
-Swapping providers is config-only: `runner/providers.json` maps a name to a base URL and a key env var, and the transport speaks plain OpenAI function-calling.
+Swapping providers is config-only: `runner/providers.json` maps a name to a base URL, a key env var, and a minimum gap between requests (`paceMs`, which is how a run stays under a free tier's tokens-per-minute cap). The transport speaks plain OpenAI function-calling.
 
 Only the `mini-loop` harness is implemented today. `opencode-headless` and `claude-code-headless` are on the roadmap (M3) — that is where the harness axis gets interesting.
 

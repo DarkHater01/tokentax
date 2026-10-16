@@ -4,7 +4,6 @@
   "max_tokens": 200000,
   "pass_timeout_seconds": 50,
   "qualify_threshold": 0.6,
-  "pace_ms": 2000,
   "provider": "groq",
   "note": "SMOKE config: one model, and the workflow filters to one task x 2 variants = 2 runs. Verifies the live path cheaply. Not a leaderboard.",
   "variants": {

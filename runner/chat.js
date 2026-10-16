@@ -1,9 +1,14 @@
 // Provider-agnostic OpenAI-compatible chat transport. Zero dependencies.
-// Free tiers throttle hard, so 429/408/5xx use exponential backoff + jitter and
-// honour Retry-After. Non-retryable 4xx (auth, bad request) fail immediately.
+//
+// Free tiers meter tokens per minute. Getting a 429 and then guessing a wait is
+// the wrong shape: we hammer the window and keep it full ourselves. So each
+// provider declares paceMs (min gap between requests) and we simply stay under
+// the cap. 429/408/5xx still retry with backoff, and the response body (which
+// states the exact limit) is surfaced instead of thrown away.
 const PROVIDERS = require("./providers.json");
 
 const RETRYABLE = (status) => status === 429 || status === 408 || status >= 500;
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 function readKey(provider) {
   const p = PROVIDERS[provider];
@@ -20,6 +25,15 @@ function readKey(provider) {
   return k;
 }
 
+// Module-level: a run is single-threaded, so one clock is enough.
+let nextAllowedAt = 0;
+async function pace(ms) {
+  if (ms <= 0) return;
+  const wait = nextAllowedAt - Date.now();
+  if (wait > 0) await sleep(wait);
+  nextAllowedAt = Date.now() + ms;
+}
+
 async function chat({
   provider = "openrouter",
   model,
@@ -34,6 +48,7 @@ async function chat({
   const p = PROVIDERS[provider];
   if (!p) throw new Error(`unknown provider: ${provider}`);
   const key = readKey(provider);
+  const paceMs = p.paceMs ?? 0;
 
   const body = { model, messages, temperature };
   if (tools && tools.length) {
@@ -47,6 +62,7 @@ async function chat({
   };
 
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    await pace(paceMs);
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), timeoutMs);
     try {
@@ -79,11 +95,9 @@ async function chat({
         }
         const retryAfter = parseFloat(res.headers.get("retry-after"));
         const backoff = Math.min(maxDelayMs, baseDelayMs * 2 ** (attempt - 1));
-        const wait =
-          (Number.isFinite(retryAfter) ? Math.min(retryAfter * 1000, maxDelayMs) : backoff) *
-          (0.7 + Math.random() * 0.6);
+        const wait = Number.isFinite(retryAfter) ? Math.min(retryAfter * 1000, maxDelayMs) : backoff;
         console.error(`   ${res.status} on ${model}, retry ${attempt}/${maxRetries} in ${(wait / 1000).toFixed(1)}s: ${detail}`);
-        await new Promise((r) => setTimeout(r, wait));
+        await sleep(wait * (0.7 + Math.random() * 0.6));
         continue;
       }
 
@@ -102,7 +116,7 @@ async function chat({
         throw new Error(`request failed for ${provider}/${model}: ${e.message}`);
       }
       const backoff = Math.min(maxDelayMs, baseDelayMs * 2 ** (attempt - 1));
-      await new Promise((r) => setTimeout(r, backoff * (0.7 + Math.random() * 0.6)));
+      await sleep(backoff * (0.7 + Math.random() * 0.6));
     } finally {
       clearTimeout(timer);
     }

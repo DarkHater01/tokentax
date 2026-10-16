@@ -1,11 +1,14 @@
 {
   "groq": {
     "base": "https://api.groq.com/openai/v1",
-    "keyEnv": "GROQ_API_KEY"
+    "keyEnv": "GROQ_API_KEY",
+    "paceMs": 15000,
+    "note": "Free tier meters 8000 tokens/minute; ~2000 tokens per request means ~4 requests/minute, so we space requests at 15s instead of tripping the limit."
   },
   "openrouter": {
     "base": "https://openrouter.ai/api/v1",
     "keyEnv": "OPENROUTER_API_KEY",
+    "paceMs": 1000,
     "headers": { "X-Title": "TokenTax" }
   }
 }
