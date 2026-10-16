@@ -1,10 +1,11 @@
 name: weekly-bench
 
-# Regenerates data/ every Monday. Requires the OPENROUTER_API_KEY secret;
-# without it the job exits cleanly so the schedule does not turn the repo red.
-# Long free-tier runs are checkpointed every 2 minutes so a stall loses nothing.
+# Regenerates data/ every Monday. Needs the secret for the provider named in
+# runner/config.json (currently GROQ_API_KEY); without it the job exits cleanly
+# so the schedule does not turn the repo red. Long free-tier runs are
+# checkpointed every 2 minutes so a stall loses nothing.
 #
-# Manual runs: mode=smoke (1 model x 1 rep, prints results, commits nothing)
+# Manual runs: mode=smoke (1 model, 1 task, prints results, commits nothing)
 #              mode=full  (the weekly leaderboard)
 on:
   schedule:
@@ -33,23 +34,26 @@ jobs:
           node-version: 24
       - name: Run benchmark
         env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
           MODE: ${{ inputs.mode }}
         run: |
-          if [ -z "$OPENROUTER_API_KEY" ]; then
-            echo "OPENROUTER_API_KEY secret not set; skipping the live run."
+          # The provider is read from config, so the guard is too.
+          KEYENV=$(node -p "require('./runner/providers.json')[require('./runner/config.json').provider||'openrouter'].keyEnv")
+          if [ -z "${!KEYENV}" ]; then
+            echo "$KEYENV secret not set; skipping the live run."
             exit 0
           fi
 
           if [ "$MODE" = "smoke" ]; then
-            echo "SMOKE: one model, one task, both variants (2 runs)."
-            k="$OPENROUTER_API_KEY"
+            echo "SMOKE: $KEYENV, one model, one task, both variants (2 runs)."
+            k="${!KEYENV}"
             echo "len=${#k}"
-            case "$k" in sk-or-*) echo "prefix=sk-or-";; *) echo "prefix=OTHER (not an OpenRouter key?)";; esac
             if printf '%s' "$k" | grep -qE '^[A-Za-z0-9_.-]+$'; then echo "charset=OK"; else echo "charset=HAS-WHITESPACE-OR-QUOTES"; fi
-            curl -s -o /tmp/or.json -w "openrouter /key -> HTTP %{http_code}\n" \
-              https://openrouter.ai/api/v1/key -H "Authorization: Bearer $k"
-            echo "body: $(head -c 200 /tmp/or.json)"
+            curl -s -o /tmp/models.json -w "provider /models -> HTTP %{http_code}\n" \
+              "$(node -p "require('./runner/providers.json')[require('./runner/config.json').provider||'openrouter'].base")/models" \
+              -H "Authorization: Bearer $k"
+            echo "body: $(head -c 200 /tmp/models.json)"
             TOKENTAX_CONFIG=runner/config.smoke.json \
             TOKENTAX_TASKS=01-fix-failing-test \
             TOKENTAX_RAW=data/raw.smoke.json \

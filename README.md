@@ -99,14 +99,16 @@ node runner/test_score.js     # scorer guards: missing rep, duplicate rep, quali
 node runner/test_tasks.js
 ```
 
-**A real run — needs an OpenRouter key:**
+**A real run — needs a provider key (see `runner/providers.json`):**
 
 ```bash
-# 1. put your models in runner/config.json and their prices in runner/prices.json
-export OPENROUTER_API_KEY=sk-or-...
+# 1. pick "provider" in runner/config.json, put its models there and their prices in runner/prices.json
+export GROQ_API_KEY=gsk_...        # or OPENROUTER_API_KEY=sk-or-...
 node runner/run.js      # model × task × harness × rep -> data/raw.json
 node runner/score.js    # data/raw.json -> data/results.json
 ```
+
+Swapping providers is config-only: `runner/providers.json` maps a name to a base URL and a key env var, and the transport speaks plain OpenAI function-calling.
 
 Only the `mini-loop` harness is implemented today. `opencode-headless` and `claude-code-headless` are on the roadmap (M3) — that is where the harness axis gets interesting.
 
@@ -116,7 +118,8 @@ Only the `mini-loop` harness is implemented today. `opencode-headless` and `clau
 runner/run.js            fixtures or a real agent harness
 runner/score.js          raw -> results.json; validates everything ("this file is the check")
 runner/sandbox.js        hardened Docker sandbox: build image, materialize jobs, grade
-runner/openrouter.js     chat transport with retries
+runner/chat.js           OpenAI-compatible chat transport (429-aware retries)
+runner/providers.json    provider name -> base URL + key env var
 runner/harnesses/        mini-loop.js (DI'd loop: read_file / write_file / run_tests)
 runner/test_harness.js   offline loop self-test (fake chat + fake sandbox)
 runner/test_score.js     offline scorer self-test
@@ -135,7 +138,7 @@ Mock and live data are separate files (`data/raw.mock.json` vs `data/raw.json`) 
 - **M3 — breadth.** opencode-headless and claude-code-headless harnesses, static leaderboard, badge endpoint.
 - **M4 — launch.** `demo.gif`, HN/Reddit.
 
-There is **no live leaderboard yet** — that needs a funded `OPENROUTER_API_KEY`, and the weekly job (`bench.yml`) writes `data/` when the secret is present. The table at the top is the offline fixture and is labelled as such on purpose: a benchmark that ships fake numbers is the thing it was built to measure.
+There is **no live leaderboard yet** — that needs a provider key (`GROQ_API_KEY`, `OPENROUTER_API_KEY`, …), and the weekly job (`bench.yml`) writes `data/` when the secret is present. The table at the top is the offline fixture and is labelled as such on purpose: a benchmark that ships fake numbers is the thing it was built to measure.
 
 ## Contributing
 

@@ -5,7 +5,7 @@ const fs = require("fs");
 const path = require("path");
 const { dirLoc } = require("./lib");
 const sandbox = require("./sandbox");
-const openrouter = require("./openrouter");
+const chatApi = require("./chat");
 
 const ROOT = process.env.TOKENTAX_ROOT || path.resolve(__dirname, "..");
 const CFG_PATH = process.env.TOKENTAX_CONFIG
@@ -27,8 +27,11 @@ function fail(msg) {
 if (!cfg.models.length) fail("no models in config. Use runner/config.mock.json for the offline smoke test.");
 
 const liveModels = cfg.models.filter((m) => !m.fixture);
-if (liveModels.length && !process.env.OPENROUTER_API_KEY) {
-  fail("OPENROUTER_API_KEY not set (needed for non-fixture models)");
+const provider = cfg.provider || "openrouter";
+const providerCfg = chatApi.PROVIDERS[provider];
+if (liveModels.length) {
+  if (!providerCfg) fail(`unknown provider: ${provider} (see runner/providers.json)`);
+  if (!process.env[providerCfg.keyEnv]) fail(`${providerCfg.keyEnv} not set (needed for provider ${provider})`);
 }
 for (const h of cfg.harnesses) {
   if (liveModels.length && !HARNESSES[h.id]) fail(`harness not implemented: ${h.id}`);
@@ -97,14 +100,7 @@ async function main() {
                 };
               } else {
                 const job = sandbox.prepareJob(taskDir);
-                const chat = (messages, tools) =>
-                  openrouter.chat({
-                    base: cfg.openrouter_base,
-                    key: process.env.OPENROUTER_API_KEY,
-                    model: model.id,
-                    messages,
-                    tools,
-                  });
+                const chat = (messages, tools) => chatApi.chat({ provider, model: model.id, messages, tools });
                 const r = await HARNESSES[harness.id].run({ job, taskMd, system, cfg, chat, sandbox });
                 const grade = sandbox.pytest(job, cfg.pass_timeout_seconds, ["_grade"]);
                 const locVal = dirLoc(job);
