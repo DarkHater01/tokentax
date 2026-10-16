@@ -900,5 +900,52 @@
     "thrash": 0,
     "loc": 20,
     "tail": ""
+  },
+  {
+    "harness": "mini-loop",
+    "model": "openai/gpt-oss-20b",
+    "task": "05-dedupe-keep-green",
+    "variant": "minimal",
+    "rep": 1,
+    "passed": false,
+    "tokens_in": 0,
+    "tokens_out": 0,
+    "turns": 0,
+    "tool_calls": 0,
+    "thrash": 0,
+    "loc": 0,
+    "error": "request failed for groq/openai/gpt-oss-20b: groq 400 for openai/gpt-oss-20b: {\"error\":{\"message\":\"Failed to parse tool call arguments as JSON\",\"type\":\"invalid_request_error\",\"code\":\"tool_use_failed\",\"failed_generation\":\"{\\\"name\\\": \\\"run_tests\\\", \\\"arguments\\\": {\\\"\\\"}\\\"}\"}}\n"
+  },
+  {
+    "harness": "mini-loop",
+    "model": "openai/gpt-oss-20b",
+    "task": "05-dedupe-keep-green",
+    "variant": "minimal",
+    "rep": 2,
+    "error": null,
+    "passed": true,
+    "tokens_in": 1848,
+    "tokens_out": 683,
+    "turns": 3,
+    "tool_calls": 2,
+    "thrash": 0,
+    "loc": 6,
+    "tail": ""
+  },
+  {
+    "harness": "mini-loop",
+    "model": "openai/gpt-oss-20b",
+    "task": "05-dedupe-keep-green",
+    "variant": "minimal",
+    "rep": 3,
+    "error": null,
+    "passed": true,
+    "tokens_in": 10408,
+    "tokens_out": 1646,
+    "turns": 8,
+    "tool_calls": 7,
+    "thrash": 0,
+    "loc": 14,
+    "tail": ""
   }
 ]
