@@ -54,6 +54,9 @@ jobs:
               "$(node -p "require('./runner/providers.json')[require('./runner/config.json').provider||'openrouter'].base")/models" \
               -H "Authorization: Bearer $k"
             echo "body: $(head -c 200 /tmp/models.json)"
+            # Free tiers retire model ids without notice; print what actually exists
+            # so a stale id in config.json is visible instead of a mystery 400.
+            node -e "try{const j=require('/tmp/models.json');console.log('models: '+j.data.map(m=>m.id).join(', '))}catch(e){console.log('models: (could not parse)')}"
             TOKENTAX_CONFIG=runner/config.smoke.json \
             TOKENTAX_TASKS=01-fix-failing-test \
             TOKENTAX_RAW=data/raw.smoke.json \
