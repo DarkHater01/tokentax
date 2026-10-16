@@ -1,5 +1,13 @@
 // OpenRouter chat transport with retries. Zero dependencies. Node 18+ fetch.
 async function chat({ base, key, model, messages, tools, temperature = 0.2, maxRetries = 4, timeoutMs = 180_000 }) {
+  // Secrets are often pasted with a trailing newline or wrapped in quotes.
+  let authKey = String(key ?? "").trim();
+  if (
+    (authKey.startsWith('"') && authKey.endsWith('"')) ||
+    (authKey.startsWith("'") && authKey.endsWith("'"))
+  ) {
+    authKey = authKey.slice(1, -1);
+  }
   const body = { model, messages, temperature };
   if (tools && tools.length) {
     body.tools = tools;
@@ -12,7 +20,7 @@ async function chat({ base, key, model, messages, tools, temperature = 0.2, maxR
       const res = await fetch(`${base}/chat/completions`, {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${key}`,
+          Authorization: `Bearer ${authKey}`,
           "Content-Type": "application/json",
           "X-Title": "TokenTax",
         },
