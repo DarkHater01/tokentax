@@ -1,5 +1,5 @@
 {
-  "reps": 5,
+  "reps": 3,
   "max_turns": 25,
   "max_tokens": 200000,
   "pass_timeout_seconds": 50,
