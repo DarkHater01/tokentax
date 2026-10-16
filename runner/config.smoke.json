@@ -4,6 +4,7 @@
   "max_tokens": 200000,
   "pass_timeout_seconds": 50,
   "qualify_threshold": 0.6,
+  "pace_ms": 2000,
   "openrouter_base": "https://openrouter.ai/api/v1",
   "note": "SMOKE config: one model, one rep, all 5 tasks x 2 variants = 10 runs. Verifies the live path (tool calls + grading) cheaply before the full weekly run. Not a leaderboard.",
   "variants": {

@@ -4,6 +4,7 @@
   "max_tokens": 200000,
   "pass_timeout_seconds": 50,
   "qualify_threshold": 0.6,
+  "pace_ms": 2000,
   "openrouter_base": "https://openrouter.ai/api/v1",
   "note": "LIVE config. Models are 'free' endpoints proven to work (same IDs slopbench ran and produced results with). Free endpoints are rate-limited and cost $0; add paid models with real prices in runner/prices.json to make the $ column meaningful. Only the 'mini-loop' harness is implemented; opencode/claude-code headless land in M3.",
   "variants": {
