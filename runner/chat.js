@@ -26,7 +26,7 @@ async function chat({
   messages,
   tools,
   temperature = 0.2,
-  maxRetries = 6,
+  maxRetries = 10,
   timeoutMs = 180_000,
   baseDelayMs = 3_000,
   maxDelayMs = 65_000,
