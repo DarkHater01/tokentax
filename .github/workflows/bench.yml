@@ -42,7 +42,7 @@ jobs:
           fi
 
           if [ "$MODE" = "smoke" ]; then
-            echo "SMOKE: one model, one rep, all tasks x variants."
+            echo "SMOKE: one model, one task, both variants (2 runs)."
             k="$OPENROUTER_API_KEY"
             echo "len=${#k}"
             case "$k" in sk-or-*) echo "prefix=sk-or-";; *) echo "prefix=OTHER (not an OpenRouter key?)";; esac
@@ -51,10 +51,12 @@ jobs:
               https://openrouter.ai/api/v1/key -H "Authorization: Bearer $k"
             echo "body: $(head -c 200 /tmp/or.json)"
             TOKENTAX_CONFIG=runner/config.smoke.json \
+            TOKENTAX_TASKS=01-fix-failing-test \
             TOKENTAX_RAW=data/raw.smoke.json \
             TOKENTAX_OUT=data/results.smoke.json \
               node runner/run.js
             TOKENTAX_CONFIG=runner/config.smoke.json \
+            TOKENTAX_TASKS=01-fix-failing-test \
             TOKENTAX_RAW=data/raw.smoke.json \
             TOKENTAX_OUT=data/results.smoke.json \
               node runner/score.js

@@ -29,9 +29,14 @@ try {
 if (!Array.isArray(raw) || raw.length === 0) fail(`no runs in ${RAW}`);
 
 const tasksDir = path.join(ROOT, "tasks");
+const onlyTasks = (process.env.TOKENTAX_TASKS || "")
+  .split(",")
+  .map((s) => s.trim())
+  .filter(Boolean);
 const taskIds = fs
   .readdirSync(tasksDir)
   .filter((d) => fs.existsSync(path.join(tasksDir, d, "task.json")))
+  .filter((d) => !onlyTasks.length || onlyTasks.includes(d))
   .sort();
 const refs = {};
 for (const id of taskIds) refs[id] = readJson(path.join(tasksDir, id, "reference", "trajectory.json"));

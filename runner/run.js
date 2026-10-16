@@ -36,10 +36,15 @@ for (const h of cfg.harnesses) {
 
 function listTasks() {
   const dir = path.join(ROOT, "tasks");
+  const only = (process.env.TOKENTAX_TASKS || "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
   return fs
     .readdirSync(dir)
     .map((d) => path.join(dir, d))
     .filter((p) => fs.statSync(p).isDirectory() && fs.existsSync(path.join(p, "task.json")))
+    .filter((p) => !only.length || only.includes(path.basename(p)))
     .sort();
 }
 
