@@ -3,8 +3,8 @@
   "unit": "USD per 1M tokens",
   "note": "Frozen snapshot. Free tiers cost $0, so the $ column reads 0 until paid models are added; the headline metric (tax) is unaffected. Update by PR and bump 'asof'. See docs/adr/ADR-001-metric.md.",
   "models": {
-    "llama-3.3-70b-versatile": { "in": 0, "out": 0 },
-    "llama-3.1-8b-instant": { "in": 0, "out": 0 },
+    "openai/gpt-oss-120b": { "in": 0, "out": 0 },
+    "openai/gpt-oss-20b": { "in": 0, "out": 0 },
     "poolside/laguna-s-2.1:free": { "in": 0, "out": 0 },
     "poolside/laguna-xs-2.1:free": { "in": 0, "out": 0 },
     "nvidia/nemotron-3-ultra-550b-a55b:free": { "in": 0, "out": 0 },

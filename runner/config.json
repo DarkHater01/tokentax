@@ -13,7 +13,7 @@
   },
   "harnesses": [{ "id": "mini-loop" }],
   "models": [
-    { "id": "llama-3.3-70b-versatile" },
-    { "id": "llama-3.1-8b-instant" }
+    { "id": "openai/gpt-oss-120b" },
+    { "id": "openai/gpt-oss-20b" }
   ]
 }

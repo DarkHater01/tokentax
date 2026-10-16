@@ -12,5 +12,5 @@
     "minimal": "Write the least Python that fully satisfies the spec. Standard library only. No classes, no abstractions, no comments beyond the spec, no error handling beyond what the spec requires. Output only the code."
   },
   "harnesses": [{ "id": "mini-loop" }],
-  "models": [{ "id": "llama-3.3-70b-versatile" }]
+  "models": [{ "id": "openai/gpt-oss-120b" }]
 }
