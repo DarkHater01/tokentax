@@ -1,2 +1,4 @@
 runner/tmp/
 node_modules/
+data/raw.smoke.json
+data/results.smoke.json

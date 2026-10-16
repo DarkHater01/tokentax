@@ -3,10 +3,19 @@ name: weekly-bench
 # Regenerates data/ every Monday. Requires the OPENROUTER_API_KEY secret;
 # without it the job exits cleanly so the schedule does not turn the repo red.
 # Long free-tier runs are checkpointed every 2 minutes so a stall loses nothing.
+#
+# Manual runs: mode=smoke (1 model x 1 rep, prints results, commits nothing)
+#              mode=full  (the weekly leaderboard)
 on:
   schedule:
     - cron: "0 6 * * 1" # Mondays 06:00 UTC
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "smoke = verify the live path (1 model x 1 rep); full = weekly leaderboard"
+        type: choice
+        options: [full, smoke]
+        default: full
 
 permissions:
   contents: write
@@ -22,14 +31,31 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 24
-      - name: Run benchmark (checkpointed)
+      - name: Run benchmark
         env:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          MODE: ${{ inputs.mode }}
         run: |
           if [ -z "$OPENROUTER_API_KEY" ]; then
             echo "OPENROUTER_API_KEY secret not set; skipping the live run."
             exit 0
           fi
+
+          if [ "$MODE" = "smoke" ]; then
+            echo "SMOKE: one model, one rep, all tasks x variants."
+            TOKENTAX_CONFIG=runner/config.smoke.json \
+            TOKENTAX_RAW=data/raw.smoke.json \
+            TOKENTAX_OUT=data/results.smoke.json \
+              node runner/run.js
+            TOKENTAX_CONFIG=runner/config.smoke.json \
+            TOKENTAX_RAW=data/raw.smoke.json \
+            TOKENTAX_OUT=data/results.smoke.json \
+              node runner/score.js
+            echo "--- smoke results ---"
+            cat data/results.smoke.json
+            exit 0
+          fi
+
           git config user.name "tokentax-bot"
           git config user.email "actions@users.noreply.github.com"
           node runner/run.js &

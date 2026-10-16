@@ -1,0 +1,15 @@
+{
+  "reps": 1,
+  "max_turns": 12,
+  "max_tokens": 200000,
+  "pass_timeout_seconds": 50,
+  "qualify_threshold": 0.6,
+  "openrouter_base": "https://openrouter.ai/api/v1",
+  "note": "SMOKE config: one model, one rep, all 5 tasks x 2 variants = 10 runs. Verifies the live path (tool calls + grading) cheaply before the full weekly run. Not a leaderboard.",
+  "variants": {
+    "vanilla": "You are an expert Python developer. Solve the task exactly as specified.",
+    "minimal": "Write the least Python that fully satisfies the spec. Standard library only. No classes, no abstractions, no comments beyond the spec, no error handling beyond what the spec requires. Output only the code."
+  },
+  "harnesses": [{ "id": "mini-loop" }],
+  "models": [{ "id": "poolside/laguna-s-2.1:free" }]
+}
