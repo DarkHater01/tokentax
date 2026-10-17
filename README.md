@@ -89,6 +89,7 @@ That last check already paid for itself: it caught a task whose "broken" version
 **Offline — no API key, no cost** (proves the loop and the scorer):
 
 ```bash
+node runner/test_chat.js      # transport: rejects a bad tool name with a nudge, retries 429, never retries a 401
 node runner/test_harness.js   # agent loop: token accounting, tool dispatch, path-escape safety, thrash, max-turns
 node runner/test_score.js     # scorer guards: missing rep, duplicate rep, qualify gate, harness axis
 ```
@@ -118,9 +119,10 @@ Only the `mini-loop` harness is implemented today. `opencode-headless` and `clau
 runner/run.js            fixtures or a real agent harness
 runner/score.js          raw -> results.json; validates everything ("this file is the check")
 runner/sandbox.js        hardened Docker sandbox: build image, materialize jobs, grade
-runner/chat.js           OpenAI-compatible chat transport (429-aware retries)
-runner/providers.json    provider name -> base URL + key env var
+runner/chat.js           OpenAI-compatible chat transport (pacing, retries, tool nudge)
+runner/providers.json    provider name -> base URL + key env var + pace
 runner/harnesses/        mini-loop.js (DI'd loop: read_file / write_file / run_tests)
+runner/test_chat.js      offline transport self-test (local stub server)
 runner/test_harness.js   offline loop self-test (fake chat + fake sandbox)
 runner/test_score.js     offline scorer self-test
 runner/test_tasks.js     tasks vs the real sandbox (needs Docker)

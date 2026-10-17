@@ -13,6 +13,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 24
+      - run: node runner/test_chat.js
       - run: node runner/test_harness.js
       - run: node runner/test_score.js
 
