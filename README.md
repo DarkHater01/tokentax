@@ -70,7 +70,7 @@ Agents are non-deterministic, so every figure is a **median over 5 reps**. Gener
 
 ## Tasks are verified, not assumed
 
-Every task ships a **broken workspace**, a **hidden test suite** (the agent never sees it — it is mounted only at grading time, under `_grade/`), and a **reference solution**. CI proves all three still agree:
+Every task ships a **broken workspace**, a **hidden test suite** (the agent never sees it — the tests are mounted read-only only at grading time), and a **reference solution**. CI proves all three still agree:
 
 ```
 $ node runner/test_tasks.js
@@ -90,6 +90,7 @@ That last check already paid for itself: it caught a task whose "broken" version
 
 ```bash
 node runner/test_chat.js      # transport: rejects a bad tool name with a nudge, retries 429, never retries a 401
+node runner/test_sandbox.js   # hidden tests never reach the job the agent can read
 node runner/test_harness.js   # agent loop: token accounting, tool dispatch, path-escape safety, thrash, max-turns
 node runner/test_score.js     # scorer guards: missing rep, duplicate rep, qualify gate, harness axis
 ```
@@ -123,6 +124,7 @@ runner/chat.js           OpenAI-compatible chat transport (pacing, retries, tool
 runner/providers.json    provider name -> base URL + key env var + pace
 runner/harnesses/        mini-loop.js (DI'd loop: read_file / write_file / run_tests)
 runner/test_chat.js      offline transport self-test (local stub server)
+runner/test_sandbox.js   offline sandbox self-test (hidden tests never reach the job)
 runner/test_harness.js   offline loop self-test (fake chat + fake sandbox)
 runner/test_score.js     offline scorer self-test
 runner/test_tasks.js     tasks vs the real sandbox (needs Docker)

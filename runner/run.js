@@ -119,7 +119,7 @@ async function main() {
                 const prompt = `${taskMd}\n\nWorkspace files:\n${listJobFiles(job).map((f) => `- ${f}`).join("\n")}`;
                 const chat = (messages, tools) => chatApi.chat({ provider, model: model.id, messages, tools });
                 const r = await HARNESSES[harness.id].run({ job, taskMd: prompt, system, cfg, chat, sandbox });
-                const grade = sandbox.pytest(job, cfg.pass_timeout_seconds, ["_grade"]);
+                const grade = sandbox.pytest(job, cfg.pass_timeout_seconds, ["/grade"], path.join(taskDir, "tests"));
                 const locVal = dirLoc(job);
                 sandbox.cleanup(job);
                 rec = {

@@ -37,16 +37,18 @@ function copyDir(src, dst) {
   }
 }
 
-// Hidden tests live under _grade/ so the agent's own tests never mix with grading.
+// Lets the agent's own pytest runs import the workspace modules.
 const CONFTEST = "import os, sys\nsys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))\n";
 
-// Materialize a runnable job: workspace (+ optional overlay) + hidden tests in _grade/.
+
+// Materialize a runnable job: workspace (+ optional overlay). The hidden tests
+// deliberately stay OUT of the job and are mounted read-only at grading time --
+// a benchmark whose hidden tests are readable by the agent is not a benchmark.
 function prepareJob(taskDir, overlay) {
   const job = path.join(TMP, `${path.basename(taskDir)}_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`);
   fs.mkdirSync(job, { recursive: true });
   copyDir(path.join(taskDir, "workspace"), job);
   if (overlay) copyDir(overlay, job);
-  copyDir(path.join(taskDir, "tests"), path.join(job, "_grade"));
   fs.writeFileSync(path.join(job, "conftest.py"), CONFTEST);
   return job;
 }
@@ -64,8 +66,9 @@ function parseJunit(xml) {
   return { tests: num("tests"), failures: num("failures"), errors: num("errors") };
 }
 
-// Run pytest in the sandbox. args: ["_grade"] to grade, ["--ignore=_grade"] for the agent.
-function pytest(jobDir, timeoutS, args = []) {
+// Run pytest in the sandbox. Pass testsDir to grade: it is mounted read-only at
+// /grade and is the only moment the hidden tests exist next to the job.
+function pytest(jobDir, timeoutS, args = [], testsDir = null) {
   const dockerArgs = [
     "run", "--rm",
     "--network", "none",
@@ -82,6 +85,7 @@ function pytest(jobDir, timeoutS, args = []) {
     "-e", "PYTHONPATH=/job",
     "-e", "PYTHONDONTWRITEBYTECODE=1",
     "-v", `${jobDir}:/job`,
+    ...(testsDir ? ["-v", `${testsDir}:/grade:ro`] : []),
     "-w", "/job",
     IMAGE,
     "timeout", String(timeoutS), "python", "-m", "pytest", "-q", "-p", "no:cacheprovider", "--junitxml=out.xml", ...args,

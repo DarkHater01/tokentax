@@ -84,7 +84,7 @@ async function run({ job, taskMd, system, cfg, chat, sandbox }) {
           written.add(args.path);
           result = "ok";
         } else if (name === "run_tests") {
-          const r = sandbox.pytest(job, cfg.pass_timeout_seconds, ["--ignore=_grade"]);
+          const r = sandbox.pytest(job, cfg.pass_timeout_seconds);
           result = r.tail || (r.passed ? "PASS" : "FAIL");
         } else {
           result = `unknown tool: ${name}`;
