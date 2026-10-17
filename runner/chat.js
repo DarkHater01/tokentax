@@ -102,8 +102,19 @@ async function chat({
       }
 
       if (!res.ok) {
-        const err = new Error(`${provider} ${res.status} for ${model}: ${(await res.text()).slice(0, 300)}`);
-        err.noRetry = true; // 4xx that is not 429/408 will not fix itself
+        const bodyText = (await res.text().catch(() => "")).slice(0, 400);
+        // A malformed tool call is stochastic and the provider rejects it with
+        // 400 before we can hand it back to the model, so retrying the same
+        // request is the only recovery we have. Without this, one bad generation
+        // voids the whole run and the leaderboard measures the harness.
+        if (/tool_use_failed/.test(bodyText) && attempt < maxRetries) {
+          const backoff = Math.min(maxDelayMs, baseDelayMs * 2 ** (attempt - 1));
+          console.error(`   ${res.status} malformed tool call on ${model}, retry ${attempt}/${maxRetries}: ${bodyText}`);
+          await sleep(backoff * (0.7 + Math.random() * 0.6));
+          continue;
+        }
+        const err = new Error(`${provider} ${res.status} for ${model}: ${bodyText}`);
+        err.noRetry = true; // other 4xx will not fix itself
         throw err;
       }
 

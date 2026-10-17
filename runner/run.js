@@ -75,7 +75,10 @@ async function main() {
   if (fs.existsSync(RAW)) {
     try {
       const before = JSON.parse(fs.readFileSync(RAW, "utf8"));
-      if (Array.isArray(before)) raw = before;
+      // Drop records that ended in an error: an error is the network or the
+      // provider, not the model, and freezing it into the file would keep a
+      // transient failure in the leaderboard forever.
+      if (Array.isArray(before)) raw = before.filter((r) => !r.error);
     } catch {
       /* corrupt partial file — start over */
     }
