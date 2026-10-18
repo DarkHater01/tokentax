@@ -17,7 +17,10 @@ const RAW = process.env.TOKENTAX_RAW
   : path.join(ROOT, "data", "raw.json");
 
 const cfg = require(CFG_PATH);
-const HARNESSES = { "mini-loop": require("./harnesses/mini-loop") };
+const HARNESSES = {
+  "mini-loop": require("./harnesses/mini-loop"),
+  "opencode-headless": require("./harnesses/opencode-headless"),
+};
 
 function fail(msg) {
   console.error(`run.js: ${msg}`);
@@ -167,7 +170,10 @@ async function main() {
                 const job = sandbox.prepareJob(taskDir);
                 const prompt = `${taskMd}\n\nWorkspace files:\n${listJobFiles(job).map((f) => `- ${f}`).join("\n")}`;
                 const chat = (messages, tools) => chatApi.chat({ provider, model: model.id, messages, tools });
-                const r = await HARNESSES[harness.id].run({ job, taskMd: prompt, system, cfg, chat, sandbox });
+                // A harness that is the tool under test needs the endpoint and the
+                // key's name; mini-loop ignores both.
+                const prov = providerCfg ? { name: provider, base: providerCfg.base, keyEnv: providerCfg.keyEnv } : null;
+                const r = await HARNESSES[harness.id].run({ job, taskMd: prompt, system, cfg, chat, sandbox, provider: prov, modelId: model.id });
                 const grade = sandbox.pytest(job, cfg.pass_timeout_seconds, { testsDir: path.join(taskDir, "tests") });
                 const locVal = dirLoc(job);
                 sandbox.cleanup(job);

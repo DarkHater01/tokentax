@@ -1,0 +1,25 @@
+# The sandbox a third-party harness runs in. Same hardening as Dockerfile, plus a
+# real agent CLI and the network it needs to reach its provider -- that network is
+# the one thing an agent CLI cannot do without, and it is why this harness gets
+# its own image instead of the grading one.
+FROM python:3.12-slim
+
+# Pinned on purpose: runner/harnesses/opencode-headless.js names the same version,
+# and the offline self-test fails if the built image reports a different one.
+ARG OPENCODE_VERSION=2.0.28
+
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends bash curl ca-certificates unzip git \
+ && rm -rf /var/lib/apt/lists/*
+
+RUN pip install --no-cache-dir pytest
+
+# OpenCode 2 ships on its own channel (the v1 installer refuses 2.x).
+RUN curl -fsSL https://opencode.ai/v2/install | bash -s -- --version "${OPENCODE_VERSION}" --no-modify-path \
+ && cp "$HOME/.opencode/bin/opencode" /usr/local/bin/opencode \
+ && opencode --version > /opt/opencode.version \
+ && cat /opt/opencode.version
+
+RUN useradd -m -u 1000 runner
+USER runner
+WORKDIR /job

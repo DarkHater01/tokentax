@@ -18,6 +18,7 @@ jobs:
       - run: node runner/test_leaderboard.js
       - run: node runner/test_reference_cost.js
       - run: node runner/test_harness.js
+      - run: node runner/test_opencode_harness.js
       - run: node runner/test_score.js
       # The fixture table in the README is generated, not typed: rebuild it from the
       # mock run and fail if the committed block differs.

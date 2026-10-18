@@ -15,16 +15,16 @@ function fail(msg) {
   process.exit(1);
 }
 
-function ensureImage() {
-  const check = spawnSync("docker", ["image", "inspect", IMAGE], { encoding: "utf8", env: safeEnv() });
+function ensureImage(image = IMAGE, dockerfile = "Dockerfile") {
+  const check = spawnSync("docker", ["image", "inspect", image], { encoding: "utf8", env: safeEnv() });
   if (check.status === 0) return;
-  console.log("building sandbox image...");
-  const b = spawnSync("docker", ["build", "-t", IMAGE, path.join(ROOT, "sandbox")], {
+  console.log(`building ${image}...`);
+  const b = spawnSync("docker", ["build", "-f", path.join(ROOT, "sandbox", dockerfile), "-t", image, path.join(ROOT, "sandbox")], {
     encoding: "utf8",
     stdio: "inherit",
     env: safeEnv(),
   });
-  if (b.status !== 0) fail("docker build failed");
+  if (b.status !== 0) fail(`docker build failed (${dockerfile})`);
 }
 
 function copyDir(src, dst) {
@@ -83,6 +83,33 @@ function verdict(exit, junit) {
   return exit === 0 && !!junit && junit.tests > 0 && junit.failures === 0 && junit.errors === 0;
 }
 
+const uid = () => (typeof process.getuid === "function" ? process.getuid() : 1000);
+const gid = () => (typeof process.getgid === "function" ? process.getgid() : 1000);
+
+// Every container starts hardened the same way, so a harness cannot quietly opt
+// out of it. The only knob is the network: grading and the model's own test runs
+// get none, while a harness that is itself the thing under test needs one to
+// reach its provider.
+function hardened({ network = "none", mounts = [], workdir = "/job", env = [], home = "/tmp" } = {}) {
+  return [
+    "run", "--rm",
+    "--network", network,
+    "--memory", "512m", "--memory-swap", "512m",
+    "--cpus", "1",
+    "--pids-limit", "128",
+    "--ulimit", "fsize=1048576",
+    "--read-only",
+    "--tmpfs", "/tmp:rw,size=64m,mode=1777",
+    "--security-opt", "no-new-privileges",
+    "--cap-drop", "ALL",
+    "--user", `${uid()}:${gid()}`,
+    "-e", `HOME=${home}`,
+    ...env,
+    ...mounts,
+    "-w", workdir,
+  ];
+}
+
 // Build the docker argv (and materialize the grading dir). Split out from pytest
 // so the self-test can assert the invariants without a Docker daemon.
 //
@@ -116,21 +143,7 @@ function buildArgs(jobDir, timeoutS, { testsDir = null } = {}) {
   return {
     report,
     args: [
-      "run", "--rm",
-      "--network", "none",
-      "--memory", "512m", "--memory-swap", "512m",
-      "--cpus", "1",
-      "--pids-limit", "128",
-      "--ulimit", "fsize=1048576",
-      "--read-only",
-      "--tmpfs", "/tmp:rw,size=64m,mode=1777",
-      "--security-opt", "no-new-privileges",
-      "--cap-drop", "ALL",
-      "--user", `${typeof process.getuid === "function" ? process.getuid() : 1000}:${typeof process.getgid === "function" ? process.getgid() : 1000}`,
-      "-e", "HOME=/tmp",
-      "-e", "PYTHONDONTWRITEBYTECODE=1",
-      ...mounts,
-      "-w", workdir,
+      ...hardened({ network: "none", mounts, workdir, env: ["-e", "PYTHONDONTWRITEBYTECODE=1"] }),
       IMAGE,
       // -P keeps the working directory off sys.path.
       "timeout", String(timeoutS), "python", "-P", "-m", "pytest", "-q", "-p", "no:cacheprovider",
@@ -156,4 +169,4 @@ function pytest(jobDir, timeoutS, opts = {}) {
   };
 }
 
-module.exports = { ensureImage, prepareJob, cleanup, pytest, buildArgs, verdict, parseJunit, TMP, IMAGE, ROOT };
+module.exports = { ensureImage, prepareJob, cleanup, pytest, buildArgs, hardened, verdict, parseJunit, TMP, IMAGE, ROOT };
