@@ -1,7 +1,9 @@
 # TODO — what stands between TokenTax and "a benchmark people cite"
 
-State: 5 tasks, 1 harness (`mini-loop`), 2 live models, 60/60 runs passing, first
-table published in the README. **1 star.** Sibling repo `slopbench`: 14 stars.
+State: 5 tasks, 2 harnesses (`mini-loop`, `opencode-headless`), 2 live models,
+60/60 runs passing, and the first table was withdrawn after a grading bug and is
+being republished from a measured denominator. **1 star.** Sibling repo
+`slopbench`: 14 stars.
 
 Rule for this file: **nothing gets launched, posted or announced until P0 is closed.**
 P0 items are not bugs in a corner; they are reasons a skeptical reader would be
@@ -139,9 +141,13 @@ full run republishes it with the measured denominator.
 
 ## P2 — the hook is `model × harness`, and there is currently one harness
 
-- [ ] **`opencode-headless` harness.** Without a second harness the headline table
-      has one harness and the repo's own thesis is unproven. This is the single
-      highest-value feature left.
+- [x] **`opencode-headless` harness.** A second harness exists and it is a real
+      tool: the OpenCode CLI (pinned 2.0.28) running headless in its own hardened
+      image, on the same tasks, models and key as `mini-loop`, with tokens read out
+      of the CLI's own database and an offline test pinning the accounting and the
+      container. See `docs/adr/ADR-002-harness-axis.md`. Its live path is verified
+      by `mode=smoke` before any full run, because the container now needs a network
+      and the key inside it -- stated in the ADR, not hidden.
 - [ ] **`claude-code-headless` harness** (and any third-party loop, which is the
       point of the axis).
 - [ ] **At least one paid model.** Every `$/task` is $0 on the free tier, so the
@@ -149,9 +155,11 @@ full run republishes it with the measured denominator.
       makes the invoice column real for cents.
 - [ ] **More tasks and a second language.** 5 Python puzzles is a demo; 15+ with
       JS/TS is a benchmark. Say how a task is chosen, not just how it is written.
-- [ ] **Badge endpoint.** A `shields.io/endpoint` JSON so another repo can display
-      its own tax. This is the cheapest distribution mechanism that exists: every
-      badge is a link back.
+- [x] **Badge endpoint.** `runner/badge.js` writes `docs/badge.json` (shields
+      endpoint schema) from the same `results.json` the table is rendered from, so
+      the two cannot drift, and it writes nothing when no row scored: a withdrawn
+      leaderboard must not leave a stale number in someone else's README. The README
+      embed lands with the next published run.
 
 ---
 
@@ -165,16 +173,23 @@ full run republishes it with the measured denominator.
       `index.html`, `PRODUCT-BRIEF.md`, `docs/demo.gif`, `docs/social-preview.png`,
       `runner/demo.js` and `runner/monitor.js` — reuse the pattern instead of
       inventing one.
-- [ ] `docs/demo.gif` (asciinema) recorded on the fixture run; hook the top of the
-      README with one move: same model, 2.4× the tax.
+- [x] `node runner/demo.js`: one command, no key, no network. Runs the fixture end
+      to end and prints the ratio per model × harness with the two deltas it exists
+      for (same model in a fatter harness; same model under a minimal prompt), and
+      says out loud that the fixture is a mock.
+- [ ] `docs/demo.gif` recorded from that output (asciinema/agg), and the card in
+      `docs/social-preview.png` filled from the published rows
 - [ ] Set the repo homepage to the Pages URL (topics are already set; homepage is not).
 
 ---
 
 ## P4 — launch (only after P0 and the denominator in P1)
 
-- [ ] One-command reproduce: `node runner/run.js` on the fixture config with no key,
-      plus a documented BYO-key path (`GROQ_API_KEY`, `OPENROUTER_API_KEY`).
+- [x] One-command reproduce: `node runner/demo.js` runs the fixture config with no
+      key and prints the metric, and `docs/social.html` + `docs/make-social.js`
+      render a social card from published numbers instead of typed ones.
+- [ ] A documented BYO-key path (`GROQ_API_KEY`, `OPENROUTER_API_KEY`) in the README
+      itself, next to the number it produces.
 - [ ] Show HN / r/LocalLLaMA post. Lead with the honest finding we already have:
       both models pass everything, and they differ by 5% on waste — the metric is not
       capability, and the minimal prompt saves 31% on the small model and 15% on the

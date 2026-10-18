@@ -20,6 +20,7 @@ jobs:
       - run: node runner/test_harness.js
       - run: node runner/test_opencode_harness.js
       - run: node runner/test_badge.js
+      - run: node runner/test_resume.js
       - run: node runner/test_score.js
       # The one command the README tells a visitor to run must work.
       - run: node runner/demo.js

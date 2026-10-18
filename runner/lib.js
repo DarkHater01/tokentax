@@ -58,6 +58,52 @@ function harnessStamp(cfg) {
   return h.digest("hex").slice(0, 12);
 }
 
+// Only the knobs that change THIS harness's runs. The other harnesses and models
+// in the file are deliberately out: hashing the whole config meant adding an
+// unrelated harness invalidated every finished record, so adding one entry threw
+// away a whole run. A record's model is already in its key, and prices are applied
+// when scoring, not when running.
+function relevantCfg(cfg, harnessId) {
+  const { models, harnesses, note, ...knobs } = cfg;
+  return { ...knobs, harness: (harnesses || []).find((h) => h.id === harnessId) || null };
+}
+
+// A record is only reusable if the harness, the prompt, the task and the tests it
+// was produced against are byte-identical: data/raw.json is committed and reused
+// weekly, so a prompt edit would otherwise silently merge two experiments and the
+// leaderboard would average them.
+function envHash(taskDir, harnessId, cfg) {
+  const h = crypto.createHash("sha256");
+  const add = (v) => h.update(String(v)).update("\0");
+  const walk = (dir) => {
+    for (const e of fs.readdirSync(dir, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name))) {
+      const p = path.join(dir, e.name);
+      if (e.isDirectory()) walk(p);
+      else {
+        add(path.relative(taskDir, p));
+        add(fs.readFileSync(p, "utf8"));
+      }
+    }
+  };
+  add(JSON.stringify(relevantCfg(cfg, harnessId)));
+  add(harnessId);
+  try {
+    add(fs.readFileSync(require.resolve(`./harnesses/${harnessId}`), "utf8"));
+  } catch {
+    // fixture-only harness id (see runner/config.mock.json)
+  }
+  for (const sub of ["task.md", "workspace", "tests"]) {
+    const p = path.join(taskDir, sub);
+    if (!fs.existsSync(p)) continue;
+    if (fs.statSync(p).isDirectory()) walk(p);
+    else {
+      add(sub);
+      add(fs.readFileSync(p, "utf8"));
+    }
+  }
+  return h.digest("hex").slice(0, 12);
+}
+
 // USD for one run, from the frozen price table.
 function costOf(rec, price) {
   return (rec.tokens_in / 1e6) * price.in + (rec.tokens_out / 1e6) * price.out;
@@ -68,4 +114,4 @@ const round = (x, d = 2) => {
   return Math.round(x * p) / p;
 };
 
-module.exports = { readJson, loc, dirLoc, median, necessaryFor, costOf, round, harnessStamp };
+module.exports = { readJson, loc, dirLoc, median, necessaryFor, costOf, round, harnessStamp, relevantCfg, envHash };

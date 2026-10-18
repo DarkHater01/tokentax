@@ -3,8 +3,7 @@
 // harness inside the Docker sandbox. Zero dependencies.
 const fs = require("fs");
 const path = require("path");
-const crypto = require("crypto");
-const { dirLoc } = require("./lib");
+const { dirLoc, envHash } = require("./lib");
 const sandbox = require("./sandbox");
 const chatApi = require("./chat");
 
@@ -66,42 +65,6 @@ function listJobFiles(dir, base = dir) {
       return e.isDirectory() ? listJobFiles(p, base) : [path.relative(base, p)];
     })
     .sort();
-}
-
-// A record is only reusable if the harness, the prompt, the task and the tests it
-// was produced against are byte-identical: data/raw.json is committed and reused
-// weekly, so a prompt edit would otherwise silently merge two experiments and the
-// leaderboard would average them.
-function envHash(taskDir, harnessId, cfg) {
-  const h = crypto.createHash("sha256");
-  const add = (v) => h.update(String(v)).update("\0");
-  const walk = (dir) => {
-    for (const e of fs.readdirSync(dir, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name))) {
-      const p = path.join(dir, e.name);
-      if (e.isDirectory()) walk(p);
-      else {
-        add(path.relative(taskDir, p));
-        add(fs.readFileSync(p, "utf8"));
-      }
-    }
-  };
-  add(JSON.stringify(cfg));
-  add(harnessId);
-  try {
-    add(fs.readFileSync(require.resolve(`./harnesses/${harnessId}`), "utf8"));
-  } catch {
-    // fixture-only harness id (see runner/config.mock.json)
-  }
-  for (const sub of ["task.md", "workspace", "tests"]) {
-    const p = path.join(taskDir, sub);
-    if (!fs.existsSync(p)) continue;
-    if (fs.statSync(p).isDirectory()) walk(p);
-    else {
-      add(sub);
-      add(fs.readFileSync(p, "utf8"));
-    }
-  }
-  return h.digest("hex").slice(0, 12);
 }
 
 async function main() {

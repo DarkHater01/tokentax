@@ -16,15 +16,17 @@ process.env.GROQ_API_KEY = FAKE_KEY;
 
 // ---- the accounting: a database with the schema the CLI actually writes -------
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "tokentax-oc-"));
-const mkDb = (name) => {
+// A database migrated from V1.
+const V1 = [
+  `create table session (id text primary key, tokens_input integer, tokens_output integer,
+    tokens_reasoning integer, tokens_cache_read integer, tokens_cache_write integer, cost real)`,
+  `create table message (id text primary key, session_id text, data text)`,
+  `create table part (id text primary key, message_id text, session_id text, data text)`,
+];
+const mkDb = (name, ddl = V1) => {
   const p = path.join(tmp, name);
   const db = new DatabaseSync(p);
-  db.exec(`
-    create table session (id text primary key, tokens_input integer, tokens_output integer,
-      tokens_reasoning integer, tokens_cache_read integer, tokens_cache_write integer, cost real);
-    create table message (id text primary key, session_id text, data text);
-    create table part (id text primary key, message_id text, session_id text, data text);
-  `);
+  for (const q of ddl) db.exec(q);
   return { p, db };
 };
 
@@ -44,6 +46,7 @@ part({ type: "text", text: "done" });
 db.close();
 
 const u = h.parseSessions(dbPath);
+assert.strictEqual(u.schema, "message/part", "a migrated V1 database keeps its sessions in the legacy tables");
 assert.strictEqual(u.sessions, 2, "every session in the throwaway database is summed");
 assert.strictEqual(u.tokens_in, 1000 + 300 + 10, "input side = uncached + cache read + cache write");
 assert.strictEqual(u.tokens_out, 200 + 50, "output side = output + reasoning (disjoint in opencode's own step records)");
@@ -51,6 +54,30 @@ assert.strictEqual(u.tokens_cache_read, 300, "the cache component stays visible 
 assert.strictEqual(u.turns, 2, "turns are assistant messages");
 assert.strictEqual(u.tool_calls, 3, "tool calls are tool parts");
 assert.strictEqual(u.thrash, 1, "a second write to the same file is the same churn mini-loop counts");
+
+// A database the CLI creates fresh is V2-only, with the other table names. The
+// first live run read the wrong one and reported no such table: session.
+const fresh = mkDb("fresh.db", [
+  `create table session_v2 (id text primary key, tokens_input integer, tokens_output integer,
+     tokens_reasoning integer, tokens_cache_read integer, tokens_cache_write integer, cost real)`,
+  `create table session_message (id text primary key, session_id text, type text, seq integer, data text)`,
+]);
+fresh.db.prepare("insert into session_v2 values ('s1', 700, 90, 10, 0, 0, 0)").run();
+const rows = [
+  { role: "assistant" },
+  { role: "user" },
+  { type: "tool", tool: "write", state: { input: { filePath: "/job/a.py" } } },
+  { type: "tool", tool: "write", state: { input: { filePath: "/job/a.py" } } },
+];
+rows.forEach((data, i) => fresh.db.prepare("insert into session_message values (?, 's1', ?, ?, ?)").run(`q${i}`, data.type || data.role, i, JSON.stringify(data)));
+fresh.db.close();
+const v2 = h.parseSessions(fresh.p);
+assert.strictEqual(v2.schema, "session_message", "a fresh V2 database is read from its own tables");
+assert.strictEqual(v2.tokens_in, 700, "the V2 token columns are the same ones");
+assert.strictEqual(v2.tokens_out, 100, "output + reasoning from the V2 table");
+assert.strictEqual(v2.turns, 1, "turns counted from session_message");
+assert.strictEqual(v2.tool_calls, 2, "tool rows counted from session_message");
+assert.strictEqual(v2.thrash, 1, "thrash is the same sum over the V2 rows");
 
 const empty = mkDb("empty.db");
 empty.db.close();

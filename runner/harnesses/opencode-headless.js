@@ -94,21 +94,53 @@ function parseSessions(dbPath) {
   }
   const db = new DatabaseSync(dbPath, { readOnly: true });
   try {
+    const tables = db.prepare("select name from sqlite_master where type='table'").all().map((r) => r.name);
+    const has = (n) => tables.includes(n);
+    // A database this CLI created fresh keeps sessions in session_v2; one migrated
+    // from V1 (a developer's) has both, with the legacy one populated. Read the V2
+    // table first and report which one was used, so the number is never taken from
+    // a guess about the layout.
+    const sess = has("session_v2") ? "session_v2" : has("session") ? "session" : null;
+    if (!sess) fail(`no session table in the CLI's database (tables: ${tables.join(", ")})`);
     const s = db
       .prepare(
-        "select count(*) n, coalesce(sum(tokens_input),0) ti, coalesce(sum(tokens_output),0) t_out, " +
-          "coalesce(sum(tokens_reasoning),0) tr, coalesce(sum(tokens_cache_read),0) cr, " +
-          "coalesce(sum(tokens_cache_write),0) cw, coalesce(sum(cost),0) cost from session"
+        `select count(*) n, coalesce(sum(tokens_input),0) ti, coalesce(sum(tokens_output),0) t_out, ` +
+          `coalesce(sum(tokens_reasoning),0) tr, coalesce(sum(tokens_cache_read),0) cr, ` +
+          `coalesce(sum(tokens_cache_write),0) cw, coalesce(sum(cost),0) cost from ${sess}`
       )
       .get();
     if (!s.n) return null;
-    const turns = db.prepare("select count(*) c from message where json_extract(data,'$.role')='assistant'").get().c;
-    const calls = db
-      .prepare(
-        "select json_extract(data,'$.tool') tool, json_extract(data,'$.state.input.filePath') file " +
-          "from part where json_extract(data,'$.type')='tool'"
-      )
-      .all();
+
+    // Messages too: V2 keeps them in session_message, a V1-migrated database in
+    // message/part. Same turning over either way.
+    let schema = "none";
+    let turns = 0;
+    const calls = [];
+    if (has("message") && has("part")) {
+      schema = "message/part";
+      turns = db.prepare("select count(*) c from message where json_extract(data,'$.role')='assistant'").get().c;
+      calls.push(
+        ...db
+          .prepare(
+            "select json_extract(data,'$.tool') tool, json_extract(data,'$.state.input.filePath') file " +
+              "from part where json_extract(data,'$.type')='tool'"
+          )
+          .all()
+      );
+    } else if (has("session_message")) {
+      schema = "session_message";
+      for (const r of db.prepare("select data from session_message").all()) {
+        let o;
+        try {
+          o = JSON.parse(r.data);
+        } catch {
+          continue;
+        }
+        if (o.role === "assistant") turns++;
+        if (o.type === "tool") calls.push({ tool: o.tool, file: o.state?.input?.filePath });
+      }
+    }
+
     // thrash is the same churn mini-loop counts: a write to a file already written.
     const written = new Set();
     let thrash = 0;
@@ -118,6 +150,7 @@ function parseSessions(dbPath) {
       written.add(c.file);
     }
     return {
+      schema,
       sessions: s.n,
       tokens_in: s.ti + s.cr + s.cw,
       tokens_out: s.t_out + s.tr,
@@ -168,6 +201,11 @@ async function run({ job, taskMd, system, provider, modelId, timeoutS = DEFAULT_
     );
   }
   fs.rmSync(runDir, { recursive: true, force: true });
+  // Say where the number came from, on every run: the schema is an internal
+  // interface, and a silent zero would look like a cheap model.
+  console.log(
+    `   oc: schema ${usage.schema}, ${usage.sessions} session(s), in=${usage.tokens_in} out=${usage.tokens_out} turns=${usage.turns} tools=${usage.tool_calls}`
+  );
   return {
     tokens_in: usage.tokens_in,
     tokens_out: usage.tokens_out,
