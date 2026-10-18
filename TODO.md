@@ -148,6 +148,21 @@ full run republishes it with the measured denominator.
       container. See `docs/adr/ADR-002-harness-axis.md`. Its live path is verified
       by `mode=smoke` before any full run, because the container now needs a network
       and the key inside it -- stated in the ADR, not hidden.
+- [ ] **Score the harness axis.** The harness is implemented and its live path works
+      (it drove the real CLI to read and edit the workspace, and its tokens came out
+      of its own database), but it is **not yet a published row**: one run of it
+      spends ~10.5k tokens against mini-loop's ~1.9k, so a 5-task run costs 630k
+      tokens and the free tier allows 200k per day, shared with every smoke run. The
+      provider said so itself: `Limit 200000, Used 199220, Requested 5045`. The rows
+      come from `runner/config.harness.json` via `mode=harness` (one task, full reps,
+      its own README block), which fits a day's allowance. Cost is the wall, not the
+      code.
+- [ ] **A live self-test for the container path.** Its offline test locks the
+      accounting, the hardening and the config, and it only checks the image's version
+      when Docker is present. What is missing is an end-to-end run against a stub
+      provider inside the sandbox job, so the plumbing is proven without a key and
+      without a model's variance. Today that proof is a smoke run per change, at one
+      round trip each.
 - [ ] **`claude-code-headless` harness** (and any third-party loop, which is the
       point of the axis).
 - [ ] **At least one paid model.** Every `$/task` is $0 on the free tier, so the

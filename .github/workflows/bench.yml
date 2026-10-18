@@ -14,9 +14,9 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: "smoke = verify the live path (1 model x 1 rep); full = weekly leaderboard"
+        description: "smoke = verify the live path (1 run per harness); harness = score the harness axis on one task; full = weekly leaderboard"
         type: choice
-        options: [full, smoke]
+        options: [full, harness, smoke]
         default: full
 
 permissions:
@@ -67,6 +67,27 @@ jobs:
             node runner/score.js || TOKENTAX_PARTIAL=1 node runner/score.js
             echo "--- smoke results ---"
             cat data/results.smoke.json
+            exit 0
+          fi
+
+          if [ "$MODE" = "harness" ]; then
+            # The harness axis on its own budget: both harnesses, one model, one task,
+            # full reps, into its own raw/results files and its own README block. The
+            # rows are not comparable with the 5-task leaderboard, which is exactly why
+            # they are rendered separately instead of mixed in.
+            export TOKENTAX_CONFIG=runner/config.harness.json
+            export TOKENTAX_TASKS=01-fix-failing-test
+            export TOKENTAX_RAW=data/raw.harness.json
+            export TOKENTAX_OUT=data/results.harness.json
+            node runner/run.js
+            node runner/score.js || TOKENTAX_PARTIAL=1 node runner/score.js
+            TOKENTAX_LB_MARKER=HARNESS node runner/leaderboard.js data/results.harness.json
+            git config user.name "tokentax-bot"
+            git config user.email "actions@users.noreply.github.com"
+            git add data/ README.md
+            git diff --cached --quiet || git commit -m "chore: harness-axis results"
+            git pull --rebase origin main
+            git push
             exit 0
           fi
 

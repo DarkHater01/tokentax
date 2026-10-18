@@ -39,6 +39,16 @@ is its content, not which role carries it.
 
 ## Consequences
 
+- **The harness axis cannot be scored on a free tier, and that is measured, not
+  guessed.** The provider's own error, from a live run: `Rate limit reached for
+  model openai/gpt-oss-120b ... on tokens per day (TPD): Limit 200000, Used 199220,
+  Requested 5045`. `mini-loop` spends ~1.9k tokens on the task; this harness spends
+  ~10.5k to do the same task, because a real CLI re-sends its system prompt, its tool
+  schemas and the workspace on every turn. Sixty such runs is 630k tokens, more than
+  three days of the free allowance, and running them would starve the harness the
+  leaderboard already has. `runner/config.harness.json` is the config that scores this
+  axis alone, so the cost lands where it can be afforded rather than in the weekly job.
+
 - **The container needs a network and the key inside it.** An agent CLI cannot
   reach a provider without both. Every other run in this repo is graded with
   `--network none`; this one is not, so the key lives where the model can, in
