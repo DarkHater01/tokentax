@@ -1,4 +1,4 @@
 {
   "headline": "How many tokens does your coding agent burn?",
-  "rows": []
+  "note": "Only the headline lives here. The rows are read from data/results.json by docs/make-social.js, so the card cannot show a number the leaderboard does not."
 }

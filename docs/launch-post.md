@@ -36,6 +36,22 @@ Published numbers live only in the machine-generated blocks in the [README](../R
 the leaderboard between the `LEADERBOARD` markers, and the labelled offline
 fixture. I am not retyping a number here. If you want one, read the README.
 
+## What it found so far (2026-10-18)
+
+Two models, five tasks, three repetitions, one lean harness, and a denominator
+rebuilt from each task's own bytes:
+
+- `openai/gpt-oss-120b` — `pass@1` 0.93, `tax` **2.43×**. In plain words: of
+  everything it spent, **59% was above the floor** the task required.
+- `openai/gpt-oss-20b` — `pass@1` 1.00, `tax` **3.43×**. That is **71%** above the
+  floor — a model can pass every task and still be the wasteful one.
+- Same models, told to write the least code that satisfies the spec: 2.17× and
+  2.22×. **A third of the small model's waste was wording**, not capability: the
+  harness's prompt made the difference.
+
+The README block is regenerated every Monday and is the source of truth; the numbers
+in this paragraph are dated, not canonical. If they have moved, the table wins.
+
 ## How to reproduce it
 
 The whole offline demo — no API key, no network — is this one paste:
@@ -57,10 +73,13 @@ needs a provider key and is `node runner/run.js` then `node runner/score.js`; se
 
 ## What it does NOT claim
 
-- **Not a demonstrated harness axis.** Only `mini-loop` is implemented
-  ([`runner/harnesses/`](../runner/harnesses)). `opencode-headless` and
-  `claude-code-headless` are on the roadmap. The thesis is `model × harness`; the
-  axis is the point and it is not built yet.
+- **Not yet a demonstrated harness axis.** `mini-loop` is scored; the second harness
+  (`opencode-headless`, the real OpenCode CLI headless inside its own image, usage read
+  from the CLI's own database) is implemented, hardened and verified live, but **not
+  scored**: it costs ~10.5k tokens per run against the lean loop's ~1.9k, so the
+  five-task run is ~630k tokens and the free tier allows 200k per day shared with
+  everything else. The numbers are missing for a boring reason — money — and the README
+  block says so instead of shipping one harness and calling it an axis.
 - **Not exact across providers.** The denominator is estimated at four characters
   per token while the numerator uses each provider's real count. `tax` compares
   models closely, not exactly, and a model with a more verbose tokenizer is
@@ -83,7 +102,8 @@ workspace could decide a pass. The fate of an unproven number in a benchmark is 
 be withdrawn, and it was. The `6.6×` headline is retired; do not cite it. `data/`
 was cleared. The fix — grading writes the report outside the job and requires
 pytest to have exited `0` with a report that says a suite ran — is pinned down by
-`runner/test_sandbox.js`. The next full run republishes the table automatically.
+`runner/test_sandbox.js`. The block at the top of the README is the run that
+republished it, with smaller and better numbers than the retired one.
 Honesty is the product here. A faked or hand-typed number kills the repo.
 
 ## What I want from readers
@@ -93,6 +113,11 @@ Honesty is the product here. A faked or hand-typed number kills the repo.
 2. **Tell me the metric is wrong.** If `necessary_tokens` for a task is too high or
    too low, open a PR against `tasks/<id>/reference/trajectory.json`. The
    denominator is the whole product; a contestable denominator is the credibility.
+3. **Spare API credit.** The harness axis needs ~630k tokens to score five tasks with
+   a second harness, and this repo runs on a free tier of 200k/day. If you have credit
+   burning a hole in an OpenRouter, Together or Groq account, that is the single
+   fastest way to turn the thesis into a table. Or run it yourself:
+   `runner/config.harness.json` and `mode=harness` exist for exactly this.
 
 ## FAQ
 
@@ -109,9 +134,15 @@ hand-written part is the minimal step list, which is in the repo for exactly thi
 argument.
 
 **Which harness wins?**
-Unknown, because there is only one harness (`mini-loop`) today. I am not going to
-rank a field of one. Ask again when `opencode-headless` and `claude-code-headless`
-land.
+Not measured yet, and I am not going to invent the ranking. The second harness is
+implemented and verified end to end — it drove the real CLI to read and edit the
+workspace, and the counts come out of the CLI's own database — but scoring five tasks
+with it is ~630k tokens against a free allowance of 200k/day. One live run already
+told me the part that matters for the thesis: on the same task it spent **10.5k tokens
+where the lean loop spent 1.9k**, and the free tier's daily cap ran out mid-measurement
+— which is why the next sentence is not "and it failed": a throttled run is evidence of
+nothing, and the harness now drops those runs instead of publishing them as a model
+failure. That is one run, not a result.
 
 ## Comments I expect
 

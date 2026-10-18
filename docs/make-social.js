@@ -51,10 +51,31 @@ function rowsHtml(rows) {
   return `<div class="grid" style="grid-template-columns:repeat(${shown.length},1fr)">${cards}${more}</div>`;
 }
 
+// The card's numbers come from the same results file as the README table and the
+// badge. They used to be typed into social-data.json, which made the most shareable
+// artifact in the repo the only one where a number could be invented by hand.
+function publishedRows() {
+  const file = path.join(DIR, "..", "data", "results.json");
+  if (!fs.existsSync(file)) return [];
+  let data;
+  try {
+    data = JSON.parse(fs.readFileSync(file, "utf8"));
+  } catch {
+    return [];
+  }
+  return (Array.isArray(data.entries) ? data.entries : [])
+    .filter((e) => e?.vanilla && typeof e.vanilla.tax === "number")
+    .map((e) => ({
+      tax: `${e.vanilla.tax}\u00d7`,
+      model: String(e.model).split("/").pop(),
+      harness: String(e.harness),
+    }));
+}
+
 function render() {
   const data = JSON.parse(fs.readFileSync(path.join(DIR, "social-data.json"), "utf8"));
   const tpl = fs.readFileSync(path.join(DIR, "social.html"), "utf8");
-  const rows = Array.isArray(data.rows) ? data.rows : [];
+  const rows = publishedRows();
   return tpl
     .replace(/\{\{HEADLINE\}\}/g, esc(data.headline || "tokentax"))
     .replace(/\{\{ROWS\}\}/g, rowsHtml(rows));
