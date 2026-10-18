@@ -26,6 +26,10 @@ node runner/demo.js
 
 It runs the whole pipeline — agent, scorer, renderer — against the offline fixture and prints the ratio per `model × harness`.
 
+![node runner/demo.js, then the published leaderboard block being rendered into this README](docs/demo.gif)
+
+That screencast is [`docs/record-demo.sh`](docs/record-demo.sh): a **scripted** session — nobody types at a readable pace — in which every command runs for real and every line is that command's own output. `asciinema` records it and `agg` renders it, and the script asserts the length and the width before writing the gif: a recording that lost its pauses, or that wrapped the printed table, would be a lie about what the command does.
+
 ---
 
 ## Live leaderboard

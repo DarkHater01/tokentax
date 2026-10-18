@@ -197,9 +197,15 @@ full run republishes it with the measured denominator.
       to end and prints the ratio per model × harness with the two deltas it exists
       for (same model in a fatter harness; same model under a minimal prompt), and
       says out loud that the fixture is a mock.
-- [ ] `docs/demo.gif` recorded from that output: `agg` and `asciinema` are not
-      installed here, and the demo is a one-second command, so the honest substitute
-      may be a still of its output rather than a video of it.
+- [x] `docs/demo.gif`: 60 seconds of `node runner/demo.js`, then the published
+      leaderboard block being rewritten into the README, recorded with `asciinema`
+      (pinned prebuilt binary, no sudo) and rendered by `agg`. `docs/record-demo.sh`
+      reproduces it and refuses to ship a take that lost its pauses or wrapped the
+      table. Two traps it documents, both found by looking at the first take:
+      `asciinema` caps every silence at 5s unless `-i` raises it, and its *trailing*
+      silence leaves no event at all, so the tail is padding computed from the cast's
+      own clock; `stty` sizes the PTY the program writes into, but `agg` renders at the
+      size in the cast's header, so `--cols` has to agree or the table re-wraps.
 - [x] **The card and the badge are generated from `results.json`**, like the table.
       The card's rows used to be typed into `docs/social-data.json`: the most
       shareable artifact was the only place a number could be handwritten. Both are
