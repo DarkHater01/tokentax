@@ -39,8 +39,13 @@ jobs:
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           MODE: ${{ inputs.mode }}
         run: |
-          # The provider is read from config, so the guard is too.
-          KEYENV=$(node -p "require('./runner/providers.json')[require('./runner/config.json').provider||'openrouter'].keyEnv")
+          # The provider is read from config, so the guard is too -- and from the config
+          # this mode will actually run, because the harness axis is the one that is
+          # expected to move to a provider that is not the free one.
+          CFG=runner/config.json
+          [ "$MODE" = "smoke" ] && CFG=runner/config.smoke.json
+          [ "$MODE" = "harness" ] && CFG=runner/config.harness.json
+          KEYENV=$(node -p "require('./runner/providers.json')[require('./$CFG').provider||'openrouter'].keyEnv")
           if [ -z "${!KEYENV}" ]; then
             echo "$KEYENV secret not set; skipping the live run."
             exit 0

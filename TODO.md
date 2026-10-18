@@ -174,7 +174,12 @@ full run republishes it with the measured denominator.
       endpoint schema) from the same `results.json` the table is rendered from, so
       the two cannot drift, and it writes nothing when no row scored: a withdrawn
       leaderboard must not leave a stale number in someone else's README. The README
-      embed lands with the next published run.
+      embeds it, and CI fails if the committed badge drifts from the results.
+- [ ] **The daily quota is shared, and that is a design constraint.** The free tier
+      allows 200k tokens/day for everything, and a smoke run of both harnesses spends
+      ~25k of it (~21k of that is the real CLI). Four debugging smokes are enough to
+      starve the weekly run's last records. Anything that adds a live smoke to a
+      change has to say where its tokens come from, or the weekly table pays for it.
 
 ---
 
@@ -192,8 +197,13 @@ full run republishes it with the measured denominator.
       to end and prints the ratio per model × harness with the two deltas it exists
       for (same model in a fatter harness; same model under a minimal prompt), and
       says out loud that the fixture is a mock.
-- [ ] `docs/demo.gif` recorded from that output (asciinema/agg), and the card in
-      `docs/social-preview.png` filled from the published rows
+- [ ] `docs/demo.gif` recorded from that output: `agg` and `asciinema` are not
+      installed here, and the demo is a one-second command, so the honest substitute
+      may be a still of its output rather than a video of it.
+- [x] **The card and the badge are generated from `results.json`**, like the table.
+      The card's rows used to be typed into `docs/social-data.json`: the most
+      shareable artifact was the only place a number could be handwritten. Both are
+      regenerated from the published run now, so they can be stale but never invented.
 - [ ] Set the repo homepage to the Pages URL (topics are already set; homepage is not).
 
 ---
