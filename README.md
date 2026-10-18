@@ -215,7 +215,7 @@ The fixture run never touches `data/`: it writes to `runner/tmp/`, so a self-tes
 - **M1 — metric engine.** fixtures + scorer + offline self-test. ✅
 - **M2 — real engine.** sandbox, agent loop, hidden tests, verified tasks, CI. ✅ Grading channel hardened: the report is written outside the job and the grade requires pytest's exit status. ✅
 - **M3 — breadth.** static leaderboard ✅ (`runner/leaderboard.js` renders `data/results.json` into the table above on every run, and the fixture table further up, from the same renderer). Badge endpoint ✅ (`docs/badge.json`, generated from the same results). A second harness ✅ — `opencode-headless` drives the real OpenCode CLI inside its own hardened image and reads its usage from the CLI's own database; it is verified live but **not yet scored**, and the block further up says why. `claude-code-headless` is still open, and so are the harness-axis rows.
-- **M4 — launch.** `demo.gif`, HN/Reddit.
+- **M4 — launch.** `demo.gif` ✅ (`docs/record-demo.sh` reproduces it and checks it). HN/Reddit.
 
 The table at the top is **live**: `bench.yml` runs the models, `score.js` refuses to publish numbers that do not add up, and `leaderboard.js` renders the result into this README. It needs a provider key (`GROQ_API_KEY`, `OPENROUTER_API_KEY`, …) and writes `data/` when the secret is present. The fixture under *The hook* is canned token counts and is labelled as such on purpose: a benchmark that ships fake numbers is the thing it was built to measure.
 
