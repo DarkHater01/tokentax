@@ -1,8 +1,9 @@
 # TokenTax
 
 [![ci](https://github.com/DarkHater01/tokentax/actions/workflows/ci.yml/badge.svg)](https://github.com/DarkHater01/tokentax/actions/workflows/ci.yml)
+[![median token tax](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2FDarkHater01%2Ftokentax%2Fmain%2Fdocs%2Fbadge.json)](docs/badge.json)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Node >=18](https://img.shields.io/badge/node-%3E%3D18-informational)](https://nodejs.org)
+[![Node >=22.13](https://img.shields.io/badge/node-%3E%3D22.13-informational)](https://nodejs.org)
 [![dependencies: 0](https://img.shields.io/badge/dependencies-0-brightgreen)](runner)
 
 **Every agent benchmark ranks how smart a model is. None ranks how much of the bill was waste.**
@@ -16,6 +17,14 @@ tax = (tokens_in + tokens_out) / necessary_tokens(model)
 ```
 
 `tax = 4.0×` means the agent spent four times what the task actually needed.
+
+**One command, no key, no network:**
+
+```bash
+node runner/demo.js
+```
+
+It runs the whole pipeline — agent, scorer, renderer — against the offline fixture and prints the ratio per `model × harness`.
 
 ---
 
@@ -59,6 +68,16 @@ TOKENTAX_CONFIG=$M TOKENTAX_RAW=runner/tmp/m.json TOKENTAX_OUT=runner/tmp/r.json
 TOKENTAX_CONFIG=$M TOKENTAX_RAW=runner/tmp/m.json TOKENTAX_OUT=runner/tmp/r.json node runner/score.js
 TOKENTAX_LB_MARKER=FIXTURE node runner/leaderboard.js runner/tmp/r.json
 ```
+
+## The harness axis, with live numbers
+
+The block above is a fixture. This one is not: the same model, one task, two harnesses — the lean loop in `runner/harnesses/mini-loop.js`, and the [OpenCode](https://opencode.ai) CLI driven headless in `runner/harnesses/opencode-headless.js` (read-only root filesystem, no network of its own, its own database as the token source). Same scorer, same renderer, its own config (`runner/config.harness.json`) and its own results file, because a one-task run is not comparable with the five-task leaderboard and mixing them would be the kind of quiet lie this repo exists to measure.
+
+It is also separate because it costs money the free tier does not have. A real harness spends about **five times** the tokens of the lean loop on the same task, because it re-sends its system prompt, its tool schemas and the workspace on every turn: ~10.5k tokens against ~1.9k. Five tasks × 3 reps of that is ~630k tokens, and the allowance here is 200k per day across everything, shared with the weekly run. The provider says so itself: `Rate limit reached ... on tokens per day (TPD): Limit 200000, Used 199220, Requested 5045`.
+
+<!-- HARNESS:START -->
+*Not scored yet.* The harness is implemented and its live path is verified end to end — it drove the real CLI to read and edit the workspace, and every count comes out of the CLI's own database — but the run that fills this block (`mode=harness`: one task, both harnesses, full reps) has not fitted in a day's allowance. Cost is the wall, not the code. See [`docs/adr/ADR-002-harness-axis.md`](docs/adr/ADR-002-harness-axis.md).
+<!-- HARNESS:END -->
 
 ## Why this is not just "cost per task"
 
@@ -164,14 +183,19 @@ runner/run.js            fixtures or a real agent harness
 runner/score.js          raw -> results.json; validates everything ("this file is the check")
 runner/reference_cost.js rebuilds necessary_tokens from each task's own files (measured, not typed)
 runner/leaderboard.js    results.json -> the live table in this README
+runner/badge.js          results.json -> docs/badge.json (the shields badge)
+runner/demo.js           the one command the README tells a visitor to run
 runner/sandbox.js        hardened Docker sandbox: build image, materialize jobs, grade
 runner/chat.js           OpenAI-compatible chat transport (pacing, retries, tool nudge)
 runner/providers.json    provider name -> base URL + key env var + pace
-runner/harnesses/        mini-loop.js (DI'd loop: read_file / write_file / run_tests)
+runner/harnesses/        mini-loop.js (DI'd loop) and opencode-headless.js (the real
+                         OpenCode CLI in its own image, usage read from its own DB)
 runner/test_chat.js      offline transport self-test (local stub server)
 runner/test_sandbox.js   offline sandbox self-test (hidden tests never reach the job)
 runner/test_leaderboard.js  offline renderer self-test
+runner/test_badge.js     offline badge self-test
 runner/test_harness.js   offline loop self-test (fake chat + fake sandbox)
+runner/test_opencode_harness.js  offline harness self-test (both DB schemas, hardening)
 runner/test_score.js     offline scorer self-test
 runner/test_reference_cost.js  offline self-test for the denominator
 runner/test_tasks.js     tasks vs the real sandbox (needs Docker)
@@ -186,12 +210,12 @@ The fixture run never touches `data/`: it writes to `runner/tmp/`, so a self-tes
 
 - **M1 — metric engine.** fixtures + scorer + offline self-test. ✅
 - **M2 — real engine.** sandbox, agent loop, hidden tests, verified tasks, CI. ✅ Grading channel hardened: the report is written outside the job and the grade requires pytest's exit status. ✅
-- **M3 — breadth.** static leaderboard ✅ (`runner/leaderboard.js` renders `data/results.json` into the table above on every run, and the fixture table further up, from the same renderer). `opencode-headless` / `claude-code-headless` harnesses and the badge endpoint are still open — that is where the harness axis gets interesting.
+- **M3 — breadth.** static leaderboard ✅ (`runner/leaderboard.js` renders `data/results.json` into the table above on every run, and the fixture table further up, from the same renderer). Badge endpoint ✅ (`docs/badge.json`, generated from the same results). A second harness ✅ — `opencode-headless` drives the real OpenCode CLI inside its own hardened image and reads its usage from the CLI's own database; it is verified live but **not yet scored**, and the block further up says why. `claude-code-headless` is still open, and so are the harness-axis rows.
 - **M4 — launch.** `demo.gif`, HN/Reddit.
 
 The table at the top is **live**: `bench.yml` runs the models, `score.js` refuses to publish numbers that do not add up, and `leaderboard.js` renders the result into this README. It needs a provider key (`GROQ_API_KEY`, `OPENROUTER_API_KEY`, …) and writes `data/` when the secret is present. The fixture under *The hook* is canned token counts and is labelled as such on purpose: a benchmark that ships fake numbers is the thing it was built to measure.
 
-The previous live table was **withdrawn**, not because the numbers were shown to be wrong but because they were not proven: that run predates the grading fixes above. `data/` was cleared and the next full run republishes the block.
+The previous live table was **withdrawn**, not because the numbers were shown to be wrong but because they were not proven: that run predates the grading fixes above. `data/` was cleared, and the block at the top is the run that republished it — same models, same tasks, now with a denominator recomputed from each task's own files and a grade that requires pytest's real exit status. The old `6.63×` headline is gone and is not coming back; the measured numbers are smaller and better.
 
 ## Contributing
 

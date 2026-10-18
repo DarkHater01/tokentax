@@ -33,6 +33,12 @@ jobs:
           TOKENTAX_CONFIG=$M TOKENTAX_RAW=runner/tmp/m.json TOKENTAX_OUT=runner/tmp/r.json node runner/score.js
           TOKENTAX_LB_MARKER=FIXTURE node runner/leaderboard.js runner/tmp/r.json
           git diff --exit-code -- README.md
+      # The badge is generated from the same results file. A stale badge is a wrong
+      # number in the most visible place the repo has.
+      - name: the badge matches the published results
+        run: |
+          node runner/badge.js
+          git diff --exit-code -- docs/badge.json
 
   sandbox:
     name: tasks against the real sandbox
