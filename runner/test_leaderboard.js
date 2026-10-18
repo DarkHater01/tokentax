@@ -26,6 +26,8 @@ const results = {
       minimal: { pass_at_1: 0.67, tax: null, cost_per_task: null },
       minimality_delta: { overall: 0 },
     },
+    // Partial runs emit entries that were never scored at all.
+    { harness: "mini-loop", model: "m-pending", status: "in_progress" },
   ],
 };
 
@@ -38,6 +40,8 @@ assert.match(out, /2026-01-02/, "the run date is visible");
 assert.match(out, /m-small/, "an entry with no taxable group is still listed");
 assert.match(out, /\*\*—\*\*/, "a null tax renders as a dash, never as a number");
 assert.match(out, /2 tasks/, "the task count comes from the results file");
+assert.match(out, /m-pending/, "an entry that was never scored is still listed");
+assert.match(out, /not scored yet \(in_progress\)/, "an unscored entry says so instead of crashing the renderer");
 assert.ok(!out.includes("stale"), "the previous block is replaced");
 assert.ok(out.startsWith("# t\n"), "text before the block is untouched");
 assert.ok(out.trimEnd().endsWith("tail"), "text after the block is untouched");

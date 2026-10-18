@@ -1,4 +1,16 @@
 {
-  "steps": ["read task.md", "read the module", "extract the shared helper", "run the tests"],
-  "necessary_tokens": { "default": 780 }
+  "steps": [
+    {
+      "action": "read",
+      "path": "shapes.py"
+    },
+    {
+      "action": "write",
+      "path": "shapes.py"
+    },
+    {
+      "action": "done"
+    }
+  ],
+  "necessary_tokens": 1311
 }

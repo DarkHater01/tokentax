@@ -36,7 +36,6 @@ jobs:
       - name: Run benchmark
         env:
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
-          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
           MODE: ${{ inputs.mode }}
         run: |
           # The provider is read from config, so the guard is too.

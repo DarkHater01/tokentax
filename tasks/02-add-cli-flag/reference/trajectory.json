@@ -1,4 +1,16 @@
 {
-  "steps": ["read task.md", "read the parser", "add the flag", "run the tests"],
-  "necessary_tokens": { "default": 520 }
+  "steps": [
+    {
+      "action": "read",
+      "path": "cli.py"
+    },
+    {
+      "action": "write",
+      "path": "cli.py"
+    },
+    {
+      "action": "done"
+    }
+  ],
+  "necessary_tokens": 1596
 }

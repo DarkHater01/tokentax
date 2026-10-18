@@ -28,14 +28,14 @@ for (const t of tasks) {
   const dir = path.join(tasksDir, t);
 
   let job = sandbox.prepareJob(dir);
-  let g = sandbox.pytest(job, 50, ["/grade"], path.join(dir, "tests"));
+  let g = sandbox.pytest(job, 50, { testsDir: path.join(dir, "tests") });
   sandbox.cleanup(job);
   assert(!g.passed, `${t}: broken workspace must FAIL grading (junit=${JSON.stringify(g.junit)})`);
 
   job = sandbox.prepareJob(dir, path.join(dir, "reference"));
-  g = sandbox.pytest(job, 50, ["/grade"], path.join(dir, "tests"));
+  g = sandbox.pytest(job, 50, { testsDir: path.join(dir, "tests") });
   sandbox.cleanup(job);
-  assert(g.passed, `${t}: reference solution must PASS grading (tail: ${g.tail})`);
+  assert(g.passed, `${t}: reference solution must PASS grading (exit=${g.exit} tail: ${g.tail})`);
 
   console.log(`  ${t}: workspace fails, reference passes`);
 }

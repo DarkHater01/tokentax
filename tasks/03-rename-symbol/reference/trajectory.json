@@ -1,4 +1,24 @@
 {
-  "steps": ["read task.md", "grep the old name", "rename in both files", "run the tests"],
-  "necessary_tokens": { "default": 700 }
+  "steps": [
+    {
+      "action": "read",
+      "path": "greet.py"
+    },
+    {
+      "action": "read",
+      "path": "app.py"
+    },
+    {
+      "action": "write",
+      "path": "greet.py"
+    },
+    {
+      "action": "write",
+      "path": "app.py"
+    },
+    {
+      "action": "done"
+    }
+  ],
+  "necessary_tokens": 2261
 }

@@ -1,4 +1,16 @@
 {
-  "steps": ["read task.md", "read the failing module", "write the fix", "run the tests"],
-  "necessary_tokens": { "default": 640 }
+  "steps": [
+    {
+      "action": "read",
+      "path": "calc.py"
+    },
+    {
+      "action": "write",
+      "path": "calc.py"
+    },
+    {
+      "action": "done"
+    }
+  ],
+  "necessary_tokens": 1280
 }

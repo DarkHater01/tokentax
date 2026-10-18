@@ -1,4 +1,20 @@
 {
-  "steps": ["read task.md", "read both files", "write the fix", "run the tests"],
-  "necessary_tokens": { "default": 560 }
+  "steps": [
+    {
+      "action": "read",
+      "path": "mathx.py"
+    },
+    {
+      "action": "read",
+      "path": "use.py"
+    },
+    {
+      "action": "write",
+      "path": "mathx.py"
+    },
+    {
+      "action": "done"
+    }
+  ],
+  "necessary_tokens": 1742
 }

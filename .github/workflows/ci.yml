@@ -16,8 +16,18 @@ jobs:
       - run: node runner/test_chat.js
       - run: node runner/test_sandbox.js
       - run: node runner/test_leaderboard.js
+      - run: node runner/test_reference_cost.js
       - run: node runner/test_harness.js
       - run: node runner/test_score.js
+      # The fixture table in the README is generated, not typed: rebuild it from the
+      # mock run and fail if the committed block differs.
+      - name: the README fixture table matches the mock run
+        run: |
+          M=runner/config.mock.json
+          TOKENTAX_CONFIG=$M TOKENTAX_RAW=runner/tmp/m.json TOKENTAX_OUT=runner/tmp/r.json node runner/run.js
+          TOKENTAX_CONFIG=$M TOKENTAX_RAW=runner/tmp/m.json TOKENTAX_OUT=runner/tmp/r.json node runner/score.js
+          TOKENTAX_LB_MARKER=FIXTURE node runner/leaderboard.js runner/tmp/r.json
+          git diff --exit-code -- README.md
 
   sandbox:
     name: tasks against the real sandbox

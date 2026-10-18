@@ -44,7 +44,10 @@ const reply = (res, status, obj, headers = {}) => {
   res.writeHead(status, { "Content-Type": "application/json", ...headers });
   res.end(JSON.stringify(obj));
 };
-const completion = { choices: [{ message: { role: "assistant", content: "done" } }], usage: {} };
+const completion = {
+  choices: [{ message: { role: "assistant", content: "done" } }],
+  usage: { prompt_tokens: 10, completion_tokens: 2 },
+};
 
 async function main() {
   // A tool name the harness never defined: provider rejects it, so we retry with
@@ -61,6 +64,8 @@ async function main() {
       assert.strictEqual(seen[1].messages.length, 2, "the retry carries one extra message");
       assert.match(seen[1].messages[1].content, /read_file/, "the nudge names the real tools");
       assert.deepStrictEqual(seen[1].messages[0], MSGS[0], "the original turn is untouched");
+      assert.strictEqual(r.retries, 1, "the retry is counted so it can be charged to the run");
+      assert(r.retry_tokens_in > 0, "the re-sent prompt is costed, not silently dropped");
     }
   );
 
@@ -90,7 +95,20 @@ async function main() {
     }
   );
 
-  console.log("test_chat: PASS (tool-nudge, no-retry-4xx, retry-429)");
+  // A completion with no usage block cannot be counted. Scoring it as 0 tokens
+  // used to publish tax 0.00x -- the perfect model, for free.
+  await withStub(
+    (n, res) => reply(res, 200, { choices: [{ message: { role: "assistant", content: "done" } }] }),
+    async (seen) => {
+      await assert.rejects(
+        () => chatApi.chat({ provider: "groq", model: "m", messages: MSGS, tools: TOOLS }),
+        /no usage/
+      );
+      assert.strictEqual(seen.length, 1, "a response without usage must not be retried");
+    }
+  );
+
+  console.log("test_chat: PASS (tool-nudge, no-retry-4xx, retry-429, retries-charged, no-usage-refused)");
 }
 
 main().catch((e) => {

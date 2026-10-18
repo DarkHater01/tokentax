@@ -3,7 +3,7 @@
 // Zero dependencies. This file is the check: it throws on anything inconsistent.
 const fs = require("fs");
 const path = require("path");
-const { readJson, median, necessaryFor, costOf, round } = require("./lib");
+const { readJson, median, necessaryFor, costOf, round, harnessStamp } = require("./lib");
 
 const ROOT = process.env.TOKENTAX_ROOT || path.resolve(__dirname, "..");
 const resolve = (v, def) => (v ? path.resolve(process.cwd(), v) : def);
@@ -45,6 +45,14 @@ const modelIds = new Set(cfg.models.map((m) => m.id));
 const harnessIds = new Set(cfg.harnesses.map((h) => h.id));
 const variantIds = Object.keys(cfg.variants);
 const QUALIFY = cfg.qualify_threshold;
+const PARTIAL = !!process.env.TOKENTAX_PARTIAL;
+
+// A provider error is not a model failure. Keep those records out of the
+// statistics and publish the count, so an interrupted run reports "incomplete"
+// instead of shaving points off a model for the network.
+const errored = raw.filter((r) => r.error);
+raw = raw.filter((r) => !r.error);
+if (!raw.length) fail(`every record in ${RAW} is an error; nothing to score`);
 
 // ---- guards on every record (the reason this file exists) ----
 for (const r of raw) {
@@ -57,6 +65,21 @@ for (const r of raw) {
     if (!(r[k] >= 0 && r[k] <= 50_000_000)) fail(`bad ${k}=${r[k]} for ${r.harness}/${r.model}/${r.task}`);
   }
   if (!prices.models[r.model]) fail(`no frozen price for model ${r.model}`);
+  // A missing usage block used to be written as 0 tokens and published as tax
+  // 0.00x -- the perfect model, for free.
+  if (r.passed && !(r.tokens_in > 0 && r.tokens_out > 0)) {
+    fail(`a passing run counted ${r.tokens_in}+${r.tokens_out} tokens: refusing to publish an uncounted pass`);
+  }
+}
+
+// Records for the same harness and task that were produced against different
+// prompts, workspaces or tests must never be averaged together.
+const seenEnv = new Map();
+for (const r of raw) {
+  const k = `${r.harness}|${r.task}`;
+  const first = seenEnv.get(k);
+  if (first && r.env_hash && first !== r.env_hash) fail(`records for ${k} were produced in different environments`);
+  seenEnv.set(k, r.env_hash || first);
 }
 
 // ---- groups: harness|model|task|variant must have exactly cfg.reps distinct reps ----
@@ -68,11 +91,14 @@ for (const r of raw) {
   groups.get(k).push(r);
 }
 for (const [k, runs] of groups) {
-  if (runs.length !== cfg.reps) fail(`group ${k} has ${runs.length} runs, expected ${cfg.reps}`);
-  if (new Set(runs.map((r) => r.rep)).size !== cfg.reps) fail(`duplicate reps in group ${k}`);
+  const distinct = new Set(runs.map((r) => r.rep)).size;
+  if (runs.length === cfg.reps && distinct === cfg.reps) continue;
+  // A partial run is scored on the groups that finished, and the entry is
+  // published as in_progress rather than as a number that is not comparable.
+  if (!PARTIAL) fail(`group ${k} has ${runs.length} runs (${distinct} distinct), expected ${cfg.reps}`);
+  groups.delete(k);
 }
 
-const PARTIAL = !!process.env.TOKENTAX_PARTIAL;
 const perEntryGroups = taskIds.length * variantIds.length;
 const exact = cfg.models.length * cfg.harnesses.length * perEntryGroups;
 if (groups.size !== exact) {
@@ -159,6 +185,8 @@ const results = {
   reps: cfg.reps,
   qualify_threshold: QUALIFY,
   prices_asof: prices.asof,
+  harness_env: harnessStamp(cfg),
+  errors: errored.length,
   tasks: Object.fromEntries(taskIds.map((id) => [id, refs[id].necessary_tokens])),
   entries,
 };

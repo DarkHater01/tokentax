@@ -1,6 +1,7 @@
 // Shared helpers. Zero dependencies.
 const fs = require("fs");
 const path = require("path");
+const crypto = require("crypto");
 
 const readJson = (f) => JSON.parse(fs.readFileSync(f, "utf8"));
 
@@ -41,6 +42,22 @@ function necessaryFor(ref, model) {
   return n[model] != null ? n[model] : n.default;
 }
 
+// Version stamp of the runner itself: the config plus every harness source. It is
+// what a published result needs so a reader knows which harness produced it; the
+// per-task hashes that guard resume live on the records (runner/run.js).
+function harnessStamp(cfg) {
+  const h = crypto.createHash("sha256");
+  h.update(JSON.stringify(cfg));
+  for (const { id } of [...cfg.harnesses].sort((a, b) => a.id.localeCompare(b.id))) {
+    try {
+      h.update(fs.readFileSync(require.resolve(`./harnesses/${id}`), "utf8"));
+    } catch {
+      h.update(id); // fixture-only harness id (see runner/config.mock.json)
+    }
+  }
+  return h.digest("hex").slice(0, 12);
+}
+
 // USD for one run, from the frozen price table.
 function costOf(rec, price) {
   return (rec.tokens_in / 1e6) * price.in + (rec.tokens_out / 1e6) * price.out;
@@ -51,4 +68,4 @@ const round = (x, d = 2) => {
   return Math.round(x * p) / p;
 };
 
-module.exports = { readJson, loc, dirLoc, median, necessaryFor, costOf, round };
+module.exports = { readJson, loc, dirLoc, median, necessaryFor, costOf, round, harnessStamp };

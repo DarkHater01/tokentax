@@ -9,6 +9,12 @@ const PROVIDERS = require("./providers.json");
 const RETRYABLE = (status) => status === 429 || status === 408 || status >= 500;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
+// A 429 or a rejected tool call bills nothing back, so the prompt we re-send is
+// costed here instead of vanishing: without it a model that thrashes against the
+// provider looks cheaper than one that does not.
+// shortcut: 4 chars/token, upgrade when a real tokenizer is available.
+const estTokens = (s) => Math.ceil(String(s).length / 4);
+
 function readKey(provider) {
   const p = PROVIDERS[provider];
   if (!p) throw new Error(`unknown provider: ${provider}`);
@@ -58,6 +64,8 @@ async function chat({
   // Carried into a retry after a rejected tool name. Lives here, not in the
   // harness transcript: it is transport-level recovery, not part of the run.
   let nudge = null;
+  let retries = 0;
+  let retry_tokens_in = 0;
 
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     await pace(paceMs);
@@ -101,6 +109,8 @@ async function chat({
         const backoff = Math.min(maxDelayMs, baseDelayMs * 2 ** (attempt - 1));
         const wait = Number.isFinite(retryAfter) ? Math.min(retryAfter * 1000, maxDelayMs) : backoff;
         console.error(`   ${res.status} on ${model}, retry ${attempt}/${maxRetries} in ${(wait / 1000).toFixed(1)}s: ${detail}`);
+        retries++;
+        retry_tokens_in += estTokens(JSON.stringify(body));
         await sleep(wait * (0.7 + Math.random() * 0.6));
         continue;
       }
@@ -121,6 +131,8 @@ async function chat({
             }. Call one of those.`,
           };
           console.error(`   ${res.status} rejected tool call on ${model}, retry ${attempt}/${maxRetries} with the real tool list: ${detail}`);
+          retries++;
+          retry_tokens_in += estTokens(JSON.stringify(body));
           await sleep(1000 * (0.7 + Math.random() * 0.6));
           continue;
         }
@@ -132,7 +144,15 @@ async function chat({
       const json = await res.json();
       const message = json.choices?.[0]?.message;
       if (!message) throw new Error(`empty completion from ${model}`);
-      return { message, usage: json.usage || {} };
+      const usage = json.usage || {};
+      // A missing usage block used to become 0 tokens and publish as tax 0.00x --
+      // the perfect model, for free. Refuse to score what cannot be counted.
+      if (!(usage.prompt_tokens ?? usage.input_tokens)) {
+        const e = new Error(`no usage in response from ${provider}/${model}: refusing to score an uncounted run`);
+        e.noRetry = true;
+        throw e;
+      }
+      return { message, usage, retries, retry_tokens_in };
     } catch (e) {
       if (e.noRetry || attempt === maxRetries) {
         throw new Error(`request failed for ${provider}/${model}: ${e.message}`);

@@ -16,7 +16,12 @@ function fakeChat(script) {
     assert(Array.isArray(tools) && tools.length, "tools must be passed to chat");
     const step = script[i++];
     assert(step, "chat called more times than scripted");
-    return { message: step.message, usage: step.usage || {} };
+    return {
+      message: step.message,
+      usage: step.usage || {},
+      retries: step.retries || 0,
+      retry_tokens_in: step.retry_tokens_in || 0,
+    };
   };
 }
 
@@ -84,8 +89,47 @@ const finish = { role: "assistant", content: "done", tool_calls: [] };
   assert.strictEqual(r.turns, 6, "loop stops at max_turns");
   assert.strictEqual(r.tool_calls, 6, "every turn made one call");
 
+  // 5) a symlink planted in the workspace must not be followed out of it. The job
+  // is bind-mounted read-write into the container, so model code can create one.
+  const outsideFile = path.join(REPO, "runner", "tmp", "harness-outside.txt");
+  const outsideDirFile = path.join(REPO, "runner", "escaped.js");
+  fs.writeFileSync(outsideFile, "ORIGINAL");
+  fs.symlinkSync(outsideFile, path.join(TMP, "evil"));
+  fs.symlinkSync(path.join(REPO, "runner"), path.join(TMP, "linkdir"));
+  r = await harness.run({
+    ...base,
+    chat: fakeChat([
+      { message: { role: "assistant", content: null, tool_calls: [toolCall("c1", "write_file", { path: "evil", content: "PWNED" })] } },
+      { message: { role: "assistant", content: null, tool_calls: [toolCall("c2", "write_file", { path: "linkdir/escaped.js", content: "PWNED" })] } },
+      { message: { role: "assistant", content: null, tool_calls: [toolCall("c3", "read_file", { path: "evil" })] } },
+      { message: finish },
+    ]),
+  });
+  assert.strictEqual(fs.readFileSync(outsideFile, "utf8"), "ORIGINAL", "a symlinked file must not be a write target");
+  assert(!fs.existsSync(outsideDirFile), "a symlinked directory must not let a write escape the job");
+  assert.strictEqual(r.tool_calls, 3, "symlink attempts are tool errors, the run survives");
+  fs.rmSync(outsideFile, { force: true });
+  fs.rmSync(outsideDirFile, { force: true });
+
+  // 6) a retried request re-sends the prompt; that cost must land in tokens_in or
+  // a model that thrashes against the provider looks cheaper than one that does not
+  r = await harness.run({
+    ...base,
+    chat: fakeChat([
+      {
+        message: { role: "assistant", content: null, tool_calls: [toolCall("c1", "write_file", { path: "c.py", content: "1" })] },
+        usage: { prompt_tokens: 100, completion_tokens: 10 },
+        retries: 2,
+        retry_tokens_in: 300,
+      },
+      { message: finish, usage: { prompt_tokens: 50, completion_tokens: 5 } },
+    ]),
+  });
+  assert.strictEqual(r.tokens_in, 450, "re-sent prompts are charged to tokens_in");
+  assert.strictEqual(r.retries, 2, "retries are counted on the record");
+
   fs.rmSync(TMP, { recursive: true, force: true });
-  console.log("test_harness: PASS (tokens, tools, escape-safe, thrash, max-turns)");
+  console.log("test_harness: PASS (tokens, tools, escape-safe, symlink-safe, thrash, retries, max-turns)");
 })().catch((e) => {
   console.error(e);
   process.exit(1);

@@ -41,9 +41,36 @@ const TOOL_HELP =
   "When the task is complete, reply with a short message and NO tool calls: the run ends and a " +
   "hidden test suite is executed against your final files.";
 
+// Real path of the nearest existing ancestor: a path we are about to create has
+// no realpath of its own, but its parent tells us where it would land.
+function realAncestor(p) {
+  let d = p;
+  while (!fs.existsSync(d)) {
+    const up = path.dirname(d);
+    if (up === d) break;
+    d = up;
+  }
+  return fs.realpathSync(d);
+}
+
+// The job directory is bind-mounted read-write into the container, so model code
+// can plant a symlink in it and a purely lexical guard would let the host-side
+// tools follow it out of the workspace (verified: a write through job/evil ->
+// /tmp/victim overwrote victim). Resolve real paths and refuse anything that
+// leaves the job, symlinked targets included. The container is not running while
+// these tools execute, so there is no concurrent writer to race against.
 function safeResolve(job, p) {
   const full = path.resolve(job, String(p ?? ""));
   if (full !== job && !full.startsWith(job + path.sep)) throw new Error(`path escapes workspace: ${p}`);
+  if (full === job) return full;
+  if (fs.existsSync(full) && fs.lstatSync(full).isSymbolicLink()) {
+    throw new Error(`refusing symlink in workspace: ${p}`);
+  }
+  const jobReal = fs.realpathSync(job);
+  const parentReal = realAncestor(path.dirname(full));
+  if (parentReal !== jobReal && !parentReal.startsWith(jobReal + path.sep)) {
+    throw new Error(`path escapes workspace: ${p}`);
+  }
   return full;
 }
 
@@ -57,12 +84,16 @@ async function run({ job, taskMd, system, cfg, chat, sandbox }) {
   let tool_calls = 0;
   let turns = 0;
   let thrash = 0;
+  let retries = 0;
   const written = new Set();
 
   for (turns = 1; turns <= cfg.max_turns; turns++) {
-    const { message, usage } = await chat(messages, TOOLS);
-    tokens_in += usage.prompt_tokens ?? usage.input_tokens ?? 0;
+    const { message, usage, retries: r_tries = 0, retry_tokens_in = 0 } = await chat(messages, TOOLS);
+    // Retried requests re-send the prompt; a run that thrashes against the
+    // provider must not look cheaper than one that does not.
+    tokens_in += (usage.prompt_tokens ?? usage.input_tokens ?? 0) + retry_tokens_in;
     tokens_out += usage.completion_tokens ?? usage.output_tokens ?? 0;
+    retries += r_tries;
     messages.push(message);
 
     const calls = message.tool_calls || [];
@@ -96,7 +127,7 @@ async function run({ job, taskMd, system, cfg, chat, sandbox }) {
     }
   }
 
-  return { tokens_in, tokens_out, turns: Math.min(turns, cfg.max_turns), tool_calls, thrash };
+  return { tokens_in, tokens_out, turns: Math.min(turns, cfg.max_turns), tool_calls, thrash, retries };
 }
 
-module.exports = { run, TOOLS };
+module.exports = { run, TOOLS, TOOL_HELP };

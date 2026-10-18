@@ -1,0 +1,190 @@
+# TODO — what stands between TokenTax and "a benchmark people cite"
+
+State: 5 tasks, 1 harness (`mini-loop`), 2 live models, 60/60 runs passing, first
+table published in the README. **1 star.** Sibling repo `slopbench`: 14 stars.
+
+Rule for this file: **nothing gets launched, posted or announced until P0 is closed.**
+P0 items are not bugs in a corner; they are reasons a skeptical reader would be
+right to say the published number is not proven.
+
+What is already solid (do not redo): hardened container (`--network none`,
+`--read-only`, `--cap-drop ALL`, `--no-new-privileges`, non-root, memory/cpu/pids
+limits), no shell/`eval` anywhere and `spawnSync` with argv arrays, hidden tests
+kept out of the job and mounted `:ro` only at grading time, one self-test per
+module wired into CI, `score.js` refusing malformed raw, live table auto-rendered
+from `data/results.json`, weekly job.
+
+---
+
+## P0 — the published numbers must be provably real  ✅ CLOSED
+
+All seven items below are fixed, each with a self-test that fails if the invariant
+comes back. The published table was **withdrawn** rather than left standing: the
+run behind it predates the grading fix, so the numbers were not proven. The next
+full run republishes it with the measured denominator.
+
+- [x] **Grading reads a file the agent can write.** `pytest --junitxml=out.xml`
+      with `-w /job` (`runner/sandbox.js:91`) then reads `jobDir/out.xml`
+      (`:95`) and sets `passed` without ever checking pytest's exit status
+      (`:101`); `timed_out` is computed (`:99`) and never used. The agent's own
+      `run_tests` writes that same path mid-run (`runner/harnesses/mini-loop.js:87`),
+      so a stale or forged report is graded as a pass.
+      *Fix:* `--junitxml=/tmp/out.xml`, `passed = r.status === 0 && !timed_out &&
+      junit.tests === expected`, and clear any `out.xml` left in the job.
+      *Test:* forge `/job/out.xml`, then kill the interpreter (`/job/sitecustomize.py`
+      is auto-imported because of `PYTHONPATH=/job`) — grading must fail.
+      *Also:* `cwd=/job` makes `python -m pytest` execute `/job/pytest.py`
+      (verified: a planted file hijacks the run). Run pytest from outside the job
+      and put the workspace on `sys.path` some way that cannot shadow pytest itself.
+
+- [x] **A symlink defeats the host-side path guard.** The agent's `read_file` /
+      `write_file` run in the host Node process and `safeResolve` is purely
+      lexical (`runner/harnesses/mini-loop.js:44-48, 78, 81-83`). The container has
+      the job dir mounted rw, so model code can drop a symlink there; the host then
+      follows it. Reproduced: a write through `job/evil -> /tmp/.../victim`
+      overwrote the victim. In CI the reachable targets include `~/.git-credentials`,
+      `.git/hooks/*` (executed by the `git commit` that follows the run, with the
+      job environment and network) and `/proc/self/environ` (`GROQ_API_KEY`).
+      *Fix:* `fs.realpathSync` the parent and re-check the prefix under the job
+      before every read/write, or move the tools into the container.
+
+- [x] **Provider errors are scored as model failures.** Records carrying `error`
+      are kept in the group (`runner/score.js`, `runner/run.js:81,140-157`), so an
+      infrastructure failure silently deflates `pass@1` and can null a task's tax.
+      The weekly job should publish *"incomplete"*, not *"the model failed"*.
+      *Fix:* exclude `error` records from scoring, mark the entry `incomplete`,
+      and put the error count in `results.json` so the table can say it.
+
+- [x] **`tokens = 0` is accepted.** The guard is `>= 0` (`runner/score.js:56-58`),
+      so a missing `usage` block (`runner/chat.js:135`) is published as `tax 0.00×`
+      — the perfect model, for free. *Fix:* require `tokens_in > 0 && tokens_out > 0`
+      on a passing run, at both transport and scorer level.
+
+- [x] **Resume can mix incompatible records.** Resume keys are
+      `harness|model|task|variant|rep` (`runner/run.js:86-99`) with no hash of the
+      config, the prompt, the task or the harness, and `data/raw.json` is committed
+      and reused weekly. A prompt edit mid-series silently merges two experiments.
+      *Fix:* store `harness_commit` + a hash of (config, task.md, workspace, prompt)
+      on each record and refuse to reuse a mismatch.
+
+- [x] **A partial run cannot recover and breaks its own fallback.**
+      The `reps` completeness check runs before the `TOKENTAX_PARTIAL` branch
+      (`runner/score.js:70-73` vs `:75-81`), and the renderer dereferences
+      `e.vanilla.tax` (`runner/leaderboard.js:17`) on entries that partial mode emits
+      without a `vanilla` key (`score.js:128`). So the documented fallback fails the
+      job and commits nothing. *Fix:* gate the reps check behind `!PARTIAL`, keep
+      incomplete groups out of the table, and skip entries with no `vanilla` in the
+      renderer (with a `status: in_progress` row instead).
+
+- [x] **Retried attempts are not counted.** 429 backoff and the tool-nudge retry
+      send the prompt again but only the final attempt's `usage` is recorded
+      (`runner/chat.js:116-126, 135`; `runner/harnesses/mini-loop.js:63-65`). A model
+      that thrashes at the transport layer looks cheaper than one that does not —
+      and unevenly, per provider. *Fix:* record `attempts` and add the re-sent
+      prompt cost to `tokens_in`.
+
+---
+
+## P1 — credibility: the denominator is the whole product
+
+- [x] **`necessary_tokens` is hand-typed, so the ratio is not tokenizer-agnostic.**
+      Every model shares `{"default": N}` (`runner/lib.js:38-42`,
+      `tasks/*/reference/trajectory.json:3`), while the README and ADR-001 claim the
+      ratio cancels per-model tokenizer differences. It does not: a model with a
+      verbose tokenizer gets a bigger numerator over the same denominator and is
+      punished for it. Per-task spread today is 3.15× to 10.00×.
+      *Fix (pick one):* derive the denominator with each model's tokenizer, or drop
+      the cross-provider claim and say plainly that the number is a per-task constant
+      measured on one reference model. This is the item a HN commenter will open the
+      thread with.
+
+- [x] **Make `trajectory.json` real.** It documents `steps` and asserts a round
+      number (520, 560, 640, 700, 780) with no measurement behind it. *Fix:* a
+      scripted, non-LLM reference trajectory that recomputes the denominator from the
+      task's own files and fails CI when it drifts — the file's name already promises
+      this, and it turns the weakest claim into the strongest one.
+
+- [x] **Publish the per-turn floor.** The numerator pays the system prompt and tool
+      schema on every turn while the denominator is one-shot, so an ideal run already
+      scores ≈2× (task 01: 640 necessary vs ~205 tokens/turn of fixed prompt). This
+      is not a bug — it is the first thing to explain, loudly, next to the number.
+
+- [ ] **`Δ minimality` has the wrong sign in the README fixture table** (−0.49
+      printed, +0.49 computed by `score.js:139` and asserted by
+      `runner/test_score.js:66`), contradicting the caption right below it and the
+      live table's "waste it removes" column. *Fix:* print the sign `score.js`
+      computes, define it once in the metric table, and regenerate the whole fixture
+      table with `runner/leaderboard.js` so no table in the README is hand-typed.
+
+- [ ] **Record how to reproduce the run.** `results.json` has no
+      `harness_commit`, no config hash and no provider/endpoint, only
+      `generated_at`. *Fix:* add commit, config hash, provider and model ids; that is
+      what makes "run it yourself" a real invitation instead of a claim.
+
+- [ ] **Task 05 contradicts itself.** The hidden test only counts a literal
+      (`tasks/05-dedupe-keep-green/tests/test_shapes.py:15-18`) and the reference
+      keeps both functions while `task.md` asks for one shared helper. *Fix:* assert
+      the shared helper exists and make the reference actually dedupe.
+
+- [ ] **The variants differ in more than verbosity.** The minimal prompt says
+      *"Output only the code."* (`runner/config.json:11`), which fights the tool loop;
+      the delta then measures instruction compliance, not minimality, and models that
+      obey end up `tax: null`. *Fix:* differ only in verbosity guidance.
+
+- [ ] **Delete dead knobs.** `thrash` is blind by construction (path-string
+      identity, byte-identical rewrites) and near-zero in live data; `max_tokens`
+      (`runner/config.json:4`) is never read. Enforce them or remove them.
+
+---
+
+## P2 — the hook is `model × harness`, and there is currently one harness
+
+- [ ] **`opencode-headless` harness.** Without a second harness the headline table
+      has one harness and the repo's own thesis is unproven. This is the single
+      highest-value feature left.
+- [ ] **`claude-code-headless` harness** (and any third-party loop, which is the
+      point of the axis).
+- [ ] **At least one paid model.** Every `$/task` is $0 on the free tier, so the
+      "how much of the *bill* was waste" angle is dormant. One cheap paid model
+      makes the invoice column real for cents.
+- [ ] **More tasks and a second language.** 5 Python puzzles is a demo; 15+ with
+      JS/TS is a benchmark. Say how a task is chosen, not just how it is written.
+- [ ] **Badge endpoint.** A `shields.io/endpoint` JSON so another repo can display
+      its own tax. This is the cheapest distribution mechanism that exists: every
+      badge is a link back.
+
+---
+
+## P3 — adoption: make it one PR for an outsider
+
+- [ ] `CONTRIBUTING.md`: add a model (config line), add a harness (interface +
+      self-test), add a task (fixture protocol). Say which of the three is one line.
+- [ ] Issue templates: "model request", "harness proposal", "task proposal",
+      "metric dispute" — the last one is the differentiator of a contestable metric.
+- [ ] `index.html` + GitHub Pages + social preview image. `slopbench` already has
+      `index.html`, `PRODUCT-BRIEF.md`, `docs/demo.gif`, `docs/social-preview.png`,
+      `runner/demo.js` and `runner/monitor.js` — reuse the pattern instead of
+      inventing one.
+- [ ] `docs/demo.gif` (asciinema) recorded on the fixture run; hook the top of the
+      README with one move: same model, 2.4× the tax.
+- [ ] Set the repo homepage to the Pages URL (topics are already set; homepage is not).
+
+---
+
+## P4 — launch (only after P0 and the denominator in P1)
+
+- [ ] One-command reproduce: `node runner/run.js` on the fixture config with no key,
+      plus a documented BYO-key path (`GROQ_API_KEY`, `OPENROUTER_API_KEY`).
+- [ ] Show HN / r/LocalLLaMA post. Lead with the honest finding we already have:
+      both models pass everything, and they differ by 5% on waste — the metric is not
+      capability, and the minimal prompt saves 31% on the small model and 15% on the
+      large one. Also state the free-tier limitation and the denominator convention
+      in the post, before anyone asks.
+- [ ] Rotate any key that has appeared in a transcript, then re-confirm the secret is
+      only reachable by the job step that needs it (`persist-credentials: false` on
+      checkout, one provider key exported at a time) — see P0's symlink item for why
+      this matters more here than in a normal repo.
+
+**One-line thesis:** replace the in-workspace grading channel with an out-of-job
+report path plus status/exit-code/test-count checks, so `passed: true` provably means
+the hidden suite actually ran.
