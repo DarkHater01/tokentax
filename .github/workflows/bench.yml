@@ -6,8 +6,9 @@ name: weekly-bench
 # checkpointed every 10 minutes so a stall loses little without burying main
 # under bot commits.
 #
-# Manual runs: mode=smoke (1 model, 1 task, prints results, commits nothing)
-#              mode=full  (the weekly leaderboard)
+# Manual runs: mode=smoke   (1 run per harness, prints results, commits nothing)
+#              mode=harness (scores the harness axis on one task, commits its rows)
+#              mode=full    (the weekly leaderboard)
 on:
   schedule:
     - cron: "0 6 * * 1" # Mondays 06:00 UTC
