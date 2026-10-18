@@ -13,6 +13,7 @@
 //    instead of quietly reporting zero tokens.
 const fs = require("fs");
 const path = require("path");
+const crypto = require("crypto");
 const { spawnSync } = require("child_process");
 const sandbox = require("../sandbox");
 
@@ -92,6 +93,33 @@ function opencodeArgs({ runDir, jobDir, provider, modelId, keyEnv, message, time
 // An OpenAI-compatible provider instead folds cached reads into `prompt_tokens`
 // and reasoning into `completion_tokens`, which is what mini-loop counts, so the
 // two harnesses are made comparable by summing the same parts here.
+// What the harness's own tools said: a tool call that ended in an error is the
+// difference between the model writing the wrong thing and the environment
+// refusing to let it write anything.
+const toolState = (el) => ({
+  tool: el.name,
+  file: el.state?.input?.filePath,
+  status: el.state?.status,
+  error: el.state?.status === "error" ? String(el.state?.output || "").split("\n")[0].slice(0, 160) : null,
+});
+
+// Content hash per file, so a run can say whether anything it did reached the
+// directory it was told to work in. A bind mount that quietly drops writes would
+// otherwise look exactly like a model that never edited. Size and mtime are not
+// enough: two writes of the same length in the same millisecond are invisible.
+function snapshot(dir) {
+  const out = new Map();
+  const walk = (d) => {
+    for (const e of fs.readdirSync(d, { withFileTypes: true })) {
+      const p = path.join(d, e.name);
+      if (e.isDirectory()) walk(p);
+      else out.set(path.relative(dir, p), crypto.createHash("sha256").update(fs.readFileSync(p)).digest("hex").slice(0, 16));
+    }
+  };
+  walk(dir);
+  return out;
+}
+
 function parseSessions(dbPath) {
   let DatabaseSync;
   try {
@@ -126,14 +154,15 @@ function parseSessions(dbPath) {
     if (has("message") && has("part")) {
       schema = "message/part";
       turns = db.prepare("select count(*) c from message where json_extract(data,'$.role')='assistant'").get().c;
-      calls.push(
-        ...db
-          .prepare(
-            "select json_extract(data,'$.tool') tool, json_extract(data,'$.state.input.filePath') file " +
-              "from part where json_extract(data,'$.type')='tool'"
-          )
-          .all()
-      );
+      for (const r of db.prepare("select data from part where json_extract(data,'$.type')='tool'").all()) {
+        let o;
+        try {
+          o = JSON.parse(r.data);
+        } catch {
+          continue;
+        }
+        calls.push(toolState({ name: o.tool, state: o.state }));
+      }
     } else if (has("session_message")) {
       schema = "session_message";
       // In V2 the kind is the table's own column ('assistant', 'user', 'idle',
@@ -150,7 +179,7 @@ function parseSessions(dbPath) {
           continue;
         }
         for (const el of Array.isArray(o.content) ? o.content : []) {
-          if (el?.type === "tool") calls.push({ tool: el.name, file: el.state?.input?.filePath });
+          if (el?.type === "tool") calls.push(toolState(el));
         }
       }
     }
@@ -176,6 +205,7 @@ function parseSessions(dbPath) {
       // Which tools, in order: a failed grade reads very differently if the harness
       // never called a write tool than if it did and wrote the wrong thing.
       tools_called: [...new Set(calls.map((c) => c.tool).filter(Boolean))],
+      tool_errors: calls.filter((c) => c.error).map((c) => `${c.tool}: ${c.error}`),
       thrash,
     };
   } finally {
@@ -202,6 +232,7 @@ async function run({ job, taskMd, system, provider, modelId, timeoutS = DEFAULT_
   // prepended to the request instead of replacing the agent's own prompt.
   const message = [system, taskMd].filter(Boolean).join("\n\n");
   const args = opencodeArgs({ runDir, jobDir: job, provider: provider.name, modelId, keyEnv: provider.keyEnv, message, timeoutS });
+  const before = snapshot(job);
   const r = spawnSync("docker", args, {
     encoding: "utf8",
     env: { PATH: process.env.PATH || "", HOME: process.env.HOME || "", [provider.keyEnv]: key },
@@ -234,11 +265,14 @@ async function run({ job, taskMd, system, provider, modelId, timeoutS = DEFAULT_
   // interface, and a silent zero would look like a cheap model. The tail is what
   // makes a failed grade arguable instead of a guess -- a throttled provider and a
   // wrong edit look identical in a token count.
+  const changed = [...snapshot(job)].filter(([f, v]) => before.get(f) !== v).map(([f]) => f);
   console.log(
     `   oc: schema ${usage.schema}, ${usage.sessions} session(s), in=${usage.tokens_in} out=${usage.tokens_out} turns=${usage.turns} tools=${usage.tool_calls}` +
       `${usage.tools_called.length ? ` [${usage.tools_called.join(",")}]` : ""}`
   );
-  if (lines.length) console.log(`   oc tail: ${lines.join(" | ").slice(0, 700)}`);
+  console.log(`   oc workspace: ${changed.length ? `changed ${changed.join(",")}` : "unchanged"}`);
+  if (usage.tool_errors.length) console.log(`   oc tool errors: ${usage.tool_errors.join(" | ").slice(0, 400)}`);
+  if (lines.length) console.log(`   oc tail: ${lines.join(" | ").slice(0, 900)}`);
   return {
     tokens_in: usage.tokens_in,
     tokens_out: usage.tokens_out,
@@ -251,4 +285,4 @@ async function run({ job, taskMd, system, provider, modelId, timeoutS = DEFAULT_
   };
 }
 
-module.exports = { run, OPENCODE_VERSION, IMAGE, alias, buildConfig, opencodeArgs, parseSessions, throttled };
+module.exports = { run, OPENCODE_VERSION, IMAGE, alias, buildConfig, opencodeArgs, parseSessions, throttled, snapshot };

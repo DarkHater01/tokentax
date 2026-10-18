@@ -41,7 +41,7 @@ msg("assistant");
 msg("assistant");
 part({ type: "tool", tool: "write", state: { input: { filePath: "/job/a.py" } } });
 part({ type: "tool", tool: "edit", state: { input: { filePath: "/job/a.py" } } }); // the churn
-part({ type: "tool", tool: "bash", state: { input: { command: "pytest" } } });
+part({ type: "tool", tool: "bash", state: { input: { command: "pytest" }, status: "error", output: "pytest: command not found\nmore" } });
 part({ type: "text", text: "done" });
 db.close();
 
@@ -54,6 +54,7 @@ assert.strictEqual(u.tokens_cache_read, 300, "the cache component stays visible 
 assert.strictEqual(u.turns, 2, "turns are assistant messages");
 assert.strictEqual(u.tool_calls, 3, "tool calls are tool parts");
 assert.deepStrictEqual(u.tools_called, ["write", "edit", "bash"], "the record names which tools ran, in order");
+assert.deepStrictEqual(u.tool_errors, ["bash: pytest: command not found"], "a tool that ended in an error is reported, without its traceback");
 assert.strictEqual(u.thrash, 1, "a second write to the same file is the same churn mini-loop counts");
 
 // A database the CLI creates fresh is V2-only, with the other table names. The
@@ -68,7 +69,7 @@ fresh.db.prepare("insert into session_v2 values ('s1', 700, 90, 10, 0, 0, 0)").r
 const v2rows = [
   { type: "assistant", content: [{ type: "reasoning", text: "think" }, { type: "tool", name: "write", state: { input: { filePath: "/job/a.py" } } }] },
   { type: "user", content: [{ type: "text", text: "fix it" }] },
-  { type: "assistant", content: [{ type: "text", text: "done" }, { type: "tool", name: "edit", state: { input: { filePath: "/job/a.py" } } }] },
+  { type: "assistant", content: [{ type: "text", text: "done" }, { type: "tool", name: "edit", state: { status: "error", output: "Could not find oldString\nin calc.py", input: { filePath: "/job/a.py" } } }] },
   { type: "idle", content: [] },
 ];
 v2rows.forEach((data, i) => fresh.db.prepare("insert into session_message values (?, 's1', ?, ?, ?)").run(`q${i}`, data.type, i, JSON.stringify(data)));
@@ -80,6 +81,18 @@ assert.strictEqual(v2.tokens_out, 100, "output + reasoning from the V2 table");
 assert.strictEqual(v2.turns, 2, "turns are the assistant rows; idle and user rows are not turns");
 assert.strictEqual(v2.tool_calls, 2, "tool calls are the tool elements of an assistant row's content");
 assert.deepStrictEqual(v2.tools_called, ["write", "edit"], "the V2 rows name their tools too");
+assert.deepStrictEqual(v2.tool_errors, ["edit: Could not find oldString"], "a failed tool call is reported with its first line");
+
+// The workspace delta is the harness's own claim about whether it changed anything.
+const ws = fs.mkdtempSync(path.join(os.tmpdir(), "tokentax-ws-"));
+fs.writeFileSync(path.join(ws, "a.py"), "x = 1\n");
+const s1 = h.snapshot(ws);
+assert.strictEqual([...h.snapshot(ws)].every(([f, v]) => s1.get(f) === v), true, "an untouched workspace is unchanged");
+fs.writeFileSync(path.join(ws, "a.py"), "x = 2\n");
+assert.strictEqual(s1.get("a.py") === h.snapshot(ws).get("a.py"), false, "a same-length edit is still a change");
+fs.writeFileSync(path.join(ws, "b.py"), "");
+assert.strictEqual(h.snapshot(ws).size, 2, "a new file shows up too");
+fs.rmSync(ws, { recursive: true, force: true });
 assert.strictEqual(v2.thrash, 1, "thrash is the same sum over the V2 rows");
 
 // The throttle guard decides whether a run can be published at all.
