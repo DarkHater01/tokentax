@@ -54,6 +54,10 @@ function opencodeArgs({ runDir, jobDir, provider, modelId, keyEnv, message, time
     "-e", `XDG_DATA_HOME=${OC}/data`,
     "-e", `XDG_CACHE_HOME=${OC}/cache`,
     "-e", `XDG_STATE_HOME=${OC}/state`,
+    // Pin the database instead of guessing where the CLI puts it: without this it
+    // lands under $XDG_DATA_HOME/opencode/, and reading the wrong path would look
+    // like a zero-token run.
+    "-e", `OPENCODE_DB=${OC}/data/opencode.db`,
     // Bare name: docker takes the value from its own environment, so the secret
     // stays out of the process list.
     "-e", keyEnv,
@@ -158,7 +162,10 @@ async function run({ job, taskMd, system, provider, modelId, timeoutS = DEFAULT_
   const usage = fs.existsSync(db) ? parseSessions(db) : null;
   const tail = `${r.stdout || ""}${r.stderr || ""}`.slice(-500);
   if (!usage || !usage.tokens_in) {
-    fail(`refusing to score an uncounted run (exit ${r.status}); last output: ${tail}`);
+    fail(
+      `refusing to score an uncounted run (exit ${r.status}; database ${fs.existsSync(db) ? "read, no tokens" : "missing"}); ` +
+        `run dir holds ${fs.existsSync(runDir) ? fs.readdirSync(runDir).join(",") : "nothing"}; last output: ${tail}`
+    );
   }
   fs.rmSync(runDir, { recursive: true, force: true });
   return {

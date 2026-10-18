@@ -9,7 +9,7 @@ FROM python:3.12-slim
 ARG OPENCODE_VERSION=2.0.28
 
 RUN apt-get update \
- && apt-get install -y --no-install-recommends bash curl ca-certificates unzip git \
+ && apt-get install -y --no-install-recommends bash curl ca-certificates unzip git ripgrep \
  && rm -rf /var/lib/apt/lists/*
 
 RUN pip install --no-cache-dir pytest

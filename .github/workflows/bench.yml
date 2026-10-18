@@ -46,7 +46,7 @@ jobs:
           fi
 
           if [ "$MODE" = "smoke" ]; then
-            echo "SMOKE: $KEYENV, one model, one task, both variants (2 runs)."
+            echo "SMOKE: $KEYENV, one model, one task, both variants, every harness."
             k="${!KEYENV}"
             echo "len=${#k}"
             if printf '%s' "$k" | grep -qE '^[A-Za-z0-9_.-]+$'; then echo "charset=OK"; else echo "charset=HAS-WHITESPACE-OR-QUOTES"; fi
@@ -57,16 +57,14 @@ jobs:
             # Free tiers retire model ids without notice; print what actually exists
             # so a stale id in config.json is visible instead of a mystery 400.
             node -e "try{const j=require('/tmp/models.json');console.log('models: '+j.data.map(m=>m.id).join(', '))}catch(e){console.log('models: (could not parse)')}"
-            TOKENTAX_CONFIG=runner/config.smoke.json \
-            TOKENTAX_TASKS=01-fix-failing-test \
-            TOKENTAX_RAW=data/raw.smoke.json \
-            TOKENTAX_OUT=data/results.smoke.json \
-              node runner/run.js
-            TOKENTAX_CONFIG=runner/config.smoke.json \
-            TOKENTAX_TASKS=01-fix-failing-test \
-            TOKENTAX_RAW=data/raw.smoke.json \
-            TOKENTAX_OUT=data/results.smoke.json \
-              node runner/score.js
+            export TOKENTAX_CONFIG=runner/config.smoke.json
+            export TOKENTAX_TASKS=01-fix-failing-test
+            export TOKENTAX_RAW=data/raw.smoke.json
+            export TOKENTAX_OUT=data/results.smoke.json
+            node runner/run.js
+            # A smoke that loses one harness to a provider hiccup should still print
+            # what it got: PARTIAL keeps the groups that did score.
+            node runner/score.js || TOKENTAX_PARTIAL=1 node runner/score.js
             echo "--- smoke results ---"
             cat data/results.smoke.json
             exit 0

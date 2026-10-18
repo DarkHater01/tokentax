@@ -76,12 +76,13 @@ for (const needed of [
   "--pids-limit 128",
   "-w /job",
   "-e GROQ_API_KEY",
+  "-e OPENCODE_DB=/oc/data/opencode.db",
   "--model groq/openai-gpt-oss-120b",
 ]) {
   assert(argv.includes(needed), `docker argv must contain: ${needed}`);
 }
 assert(!argv.includes(FAKE_KEY), "the provider key must not travel in argv (docker reads it from its own env)");
-assert(argv.indexOf(h.IMAGE) < argv.indexOf("opencode"), "the command must come after the image");
+assert(args.indexOf(h.IMAGE) > 0 && args.indexOf(h.IMAGE) < args.indexOf("opencode"), "the command must come after the image");
 
 // ---- the provider config: credentials by reference, never by value ------------
 const cfg = h.buildConfig({ provider: "groq", base: "https://api.groq.com/openai/v1", keyEnv: "GROQ_API_KEY", modelId: "openai/gpt-oss-120b" });
