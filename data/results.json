@@ -1,0 +1,219 @@
+{
+  "generated_at": "2026-10-18T06:00:05.561Z",
+  "reps": 3,
+  "qualify_threshold": 0.6,
+  "prices_asof": "2026-10-16",
+  "harness_env": "fa41c6f07163",
+  "errors": 0,
+  "tasks": {
+    "01-fix-failing-test": 1280,
+    "02-add-cli-flag": 1596,
+    "03-rename-symbol": 2261,
+    "04-fix-bug-2-files": 1742,
+    "05-dedupe-keep-green": 1311
+  },
+  "entries": [
+    {
+      "harness": "mini-loop",
+      "model": "openai/gpt-oss-120b",
+      "status": "complete",
+      "vanilla": {
+        "per_task": {
+          "01-fix-failing-test": {
+            "pass_at_1": 1,
+            "consistent": true,
+            "tax": 1.58,
+            "cost_per_task": 0,
+            "thrash": 0
+          },
+          "02-add-cli-flag": {
+            "pass_at_1": 1,
+            "consistent": true,
+            "tax": 2.87,
+            "cost_per_task": 0,
+            "thrash": 0
+          },
+          "03-rename-symbol": {
+            "pass_at_1": 1,
+            "consistent": true,
+            "tax": 1.61,
+            "cost_per_task": 0,
+            "thrash": 0
+          },
+          "04-fix-bug-2-files": {
+            "pass_at_1": 1,
+            "consistent": true,
+            "tax": 2.67,
+            "cost_per_task": 0,
+            "thrash": 0
+          },
+          "05-dedupe-keep-green": {
+            "pass_at_1": 0.67,
+            "consistent": false,
+            "tax": 3.44,
+            "cost_per_task": 0,
+            "thrash": 0
+          }
+        },
+        "pass_at_1": 0.93,
+        "tax": 2.43,
+        "cost_per_task": 0,
+        "thrash": 0
+      },
+      "minimal": {
+        "per_task": {
+          "01-fix-failing-test": {
+            "pass_at_1": 1,
+            "consistent": true,
+            "tax": 1.66,
+            "cost_per_task": 0,
+            "thrash": 0
+          },
+          "02-add-cli-flag": {
+            "pass_at_1": 1,
+            "consistent": true,
+            "tax": 2.46,
+            "cost_per_task": 0,
+            "thrash": 0
+          },
+          "03-rename-symbol": {
+            "pass_at_1": 1,
+            "consistent": true,
+            "tax": 2.04,
+            "cost_per_task": 0,
+            "thrash": 0
+          },
+          "04-fix-bug-2-files": {
+            "pass_at_1": 1,
+            "consistent": true,
+            "tax": 2.48,
+            "cost_per_task": 0,
+            "thrash": 0
+          },
+          "05-dedupe-keep-green": {
+            "pass_at_1": 1,
+            "consistent": true,
+            "tax": 2.23,
+            "cost_per_task": 0,
+            "thrash": 0
+          }
+        },
+        "pass_at_1": 1,
+        "tax": 2.17,
+        "cost_per_task": 0,
+        "thrash": 0
+      },
+      "minimality_delta": {
+        "per_task": {
+          "01-fix-failing-test": -0.08,
+          "02-add-cli-flag": 0.41,
+          "03-rename-symbol": -0.43,
+          "04-fix-bug-2-files": 0.19,
+          "05-dedupe-keep-green": 1.21
+        },
+        "overall": 0.26
+      }
+    },
+    {
+      "harness": "mini-loop",
+      "model": "openai/gpt-oss-20b",
+      "status": "complete",
+      "vanilla": {
+        "per_task": {
+          "01-fix-failing-test": {
+            "pass_at_1": 1,
+            "consistent": true,
+            "tax": 1.66,
+            "cost_per_task": 0,
+            "thrash": 0
+          },
+          "02-add-cli-flag": {
+            "pass_at_1": 1,
+            "consistent": true,
+            "tax": 2.67,
+            "cost_per_task": 0,
+            "thrash": 0
+          },
+          "03-rename-symbol": {
+            "pass_at_1": 1,
+            "consistent": true,
+            "tax": 1.67,
+            "cost_per_task": 0,
+            "thrash": 0
+          },
+          "04-fix-bug-2-files": {
+            "pass_at_1": 1,
+            "consistent": true,
+            "tax": 2.22,
+            "cost_per_task": 0,
+            "thrash": 0
+          },
+          "05-dedupe-keep-green": {
+            "pass_at_1": 1,
+            "consistent": true,
+            "tax": 8.93,
+            "cost_per_task": 0,
+            "thrash": 0
+          }
+        },
+        "pass_at_1": 1,
+        "tax": 3.43,
+        "cost_per_task": 0,
+        "thrash": 0
+      },
+      "minimal": {
+        "per_task": {
+          "01-fix-failing-test": {
+            "pass_at_1": 1,
+            "consistent": true,
+            "tax": 1.75,
+            "cost_per_task": 0,
+            "thrash": 0
+          },
+          "02-add-cli-flag": {
+            "pass_at_1": 1,
+            "consistent": true,
+            "tax": 3.35,
+            "cost_per_task": 0,
+            "thrash": 0
+          },
+          "03-rename-symbol": {
+            "pass_at_1": 1,
+            "consistent": true,
+            "tax": 1.36,
+            "cost_per_task": 0,
+            "thrash": 0
+          },
+          "04-fix-bug-2-files": {
+            "pass_at_1": 1,
+            "consistent": true,
+            "tax": 1.39,
+            "cost_per_task": 0,
+            "thrash": 0
+          },
+          "05-dedupe-keep-green": {
+            "pass_at_1": 1,
+            "consistent": true,
+            "tax": 3.23,
+            "cost_per_task": 0,
+            "thrash": 0
+          }
+        },
+        "pass_at_1": 1,
+        "tax": 2.22,
+        "cost_per_task": 0,
+        "thrash": 0
+      },
+      "minimality_delta": {
+        "per_task": {
+          "01-fix-failing-test": -0.09,
+          "02-add-cli-flag": -0.68,
+          "03-rename-symbol": 0.31,
+          "04-fix-bug-2-files": 0.83,
+          "05-dedupe-keep-green": 5.7
+        },
+        "overall": 1.21
+      }
+    }
+  ]
+}

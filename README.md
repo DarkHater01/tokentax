@@ -22,7 +22,14 @@ tax = (tokens_in + tokens_out) / necessary_tokens(model)
 ## Live leaderboard
 
 <!-- LEADERBOARD:START -->
-**The previous table was withdrawn.** The run behind it predates the grading fixes described below: the grade did not require pytest to have exited `0`, and a junit report left in the agent's own workspace could decide it. Those numbers were never shown to be wrong — they were simply not proven, and an unproven number in a benchmark is worse than no number at all. `data/` has been cleared; the next full run republishes this block automatically.
+**Last scored 2026-10-18** · harness `mini-loop` · 5 tasks × 3 reps · variants: vanilla, minimal · env `fa41c6f07163`
+
+| # | harness | model | `pass@1` | `tax` | `$/task` | `tax` with the minimal prompt | waste it removes |
+|---|---|---|---|---|---|---|---|
+| 1 | `mini-loop` | `openai/gpt-oss-120b` | 0.93 | **2.43×** | $0 | 2.17× | 11% |
+| 2 | `mini-loop` | `openai/gpt-oss-20b` | 1.00 | **3.43×** | $0 | 2.22× | 35% |
+
+Ranked by waste. `tax = 3×` means the agent spent three times what the task actually needed. The table is generated: it is never edited by hand.
 <!-- LEADERBOARD:END -->
 
 ## The hook: same model, different bill
