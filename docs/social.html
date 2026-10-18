@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>tokentax — social card</title>
+<!-- Template. docs/make-social.js replaces {{HEADLINE}} and {{ROWS}} and screenshots
+     the result at 1200x630. Opened directly, this file shows the placeholder text. -->
+<style>
+  html,body{margin:0;padding:0;width:1200px;height:630px;overflow:hidden;
+    background:#0b1020;color:#e6edf3;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"DejaVu Sans Mono",monospace}
+  .wrap{box-sizing:border-box;width:1200px;height:630px;padding:44px 56px;display:flex;flex-direction:column;
+    background:radial-gradient(900px 380px at 18% -12%,#17253f 0%,#0b1020 58%),#0b1020}
+  .tag{font-size:19px;color:#58a6ff;letter-spacing:.18em;text-transform:uppercase;white-space:nowrap}
+  h1{font-size:52px;line-height:1.14;margin:14px 0 0;font-weight:700;max-width:1000px}
+  .def{margin:20px 0 0;font-size:25px;color:#3fb950;background:#111726;border:1px solid #2d333b;
+    border-radius:10px;padding:13px 20px;white-space:nowrap;align-self:flex-start}
+  .note{margin:12px 0 0;font-size:21px;color:#8b949e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .rows{margin-top:22px;flex:1;min-height:0;overflow:hidden}
+  /* Column count is inlined by make-social.js; the fallback is the standalone view. */
+  .grid{display:grid;gap:18px;grid-template-columns:1fr;align-content:start}
+  .row{background:#161b2c;border:1px solid #2d333b;border-radius:12px;padding:18px 22px;min-width:0;overflow:hidden}
+  .row .v{font-size:44px;font-weight:700;color:#3fb950;white-space:nowrap}
+  .row .k{font-size:17px;line-height:1.25;color:#8b949e;margin-top:6px;overflow-wrap:anywhere}
+  .more{grid-column:1/-1;font-size:17px;color:#6e7681}
+  .empty{border:1px dashed #30363d;border-radius:12px;background:#0f1421;padding:22px 26px}
+  .empty .t{font-size:23px;color:#c9d1d9}
+  .empty .s{font-size:19px;line-height:1.35;color:#6e7681;margin-top:8px;max-width:960px}
+  .foot{margin-top:16px;font-size:20px;color:#6e7681;white-space:nowrap}
+</style></head>
+<body>
+  <div class="wrap">
+    <div class="tag">tokentax &mdash; waste, not price</div>
+    <h1>{{HEADLINE}}</h1>
+    <div class="def">tax = (tokens_in + tokens_out) / necessary_tokens</div>
+    <div class="note">scored per model &times; harness &mdash; the same model costs more in a fatter harness</div>
+    <div class="rows">{{ROWS}}</div>
+    <div class="foot">github.com/DarkHater01/tokentax</div>
+  </div>
+</body></html>
