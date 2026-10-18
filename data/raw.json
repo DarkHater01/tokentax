@@ -1060,5 +1060,23 @@
     "retries": 2,
     "loc": 13,
     "tail": ""
+  },
+  {
+    "harness": "mini-loop",
+    "model": "openai/gpt-oss-20b",
+    "task": "05-dedupe-keep-green",
+    "variant": "minimal",
+    "rep": 3,
+    "error": null,
+    "env_hash": "78f5a199c1aa",
+    "passed": true,
+    "tokens_in": 3358,
+    "tokens_out": 878,
+    "turns": 4,
+    "tool_calls": 3,
+    "thrash": 0,
+    "retries": 0,
+    "loc": 6,
+    "tail": ""
   }
 ]
