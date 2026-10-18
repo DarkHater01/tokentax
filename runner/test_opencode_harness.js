@@ -63,21 +63,30 @@ const fresh = mkDb("fresh.db", [
   `create table session_message (id text primary key, session_id text, type text, seq integer, data text)`,
 ]);
 fresh.db.prepare("insert into session_v2 values ('s1', 700, 90, 10, 0, 0, 0)").run();
-const rows = [
-  { role: "assistant" },
-  { role: "user" },
-  { type: "tool", tool: "write", state: { input: { filePath: "/job/a.py" } } },
-  { type: "tool", tool: "write", state: { input: { filePath: "/job/a.py" } } },
+// The real V2 shape: the kind is the column, the parts live in data.content.
+const v2rows = [
+  { type: "assistant", content: [{ type: "reasoning", text: "think" }, { type: "tool", name: "write", state: { input: { filePath: "/job/a.py" } } }] },
+  { type: "user", content: [{ type: "text", text: "fix it" }] },
+  { type: "assistant", content: [{ type: "text", text: "done" }, { type: "tool", name: "edit", state: { input: { filePath: "/job/a.py" } } }] },
+  { type: "idle", content: [] },
 ];
-rows.forEach((data, i) => fresh.db.prepare("insert into session_message values (?, 's1', ?, ?, ?)").run(`q${i}`, data.type || data.role, i, JSON.stringify(data)));
+v2rows.forEach((data, i) => fresh.db.prepare("insert into session_message values (?, 's1', ?, ?, ?)").run(`q${i}`, data.type, i, JSON.stringify(data)));
 fresh.db.close();
 const v2 = h.parseSessions(fresh.p);
 assert.strictEqual(v2.schema, "session_message", "a fresh V2 database is read from its own tables");
 assert.strictEqual(v2.tokens_in, 700, "the V2 token columns are the same ones");
 assert.strictEqual(v2.tokens_out, 100, "output + reasoning from the V2 table");
-assert.strictEqual(v2.turns, 1, "turns counted from session_message");
-assert.strictEqual(v2.tool_calls, 2, "tool rows counted from session_message");
+assert.strictEqual(v2.turns, 2, "turns are the assistant rows; idle and user rows are not turns");
+assert.strictEqual(v2.tool_calls, 2, "tool calls are the tool elements of an assistant row's content");
 assert.strictEqual(v2.thrash, 1, "thrash is the same sum over the V2 rows");
+
+// The throttle guard decides whether a run can be published at all.
+assert.strictEqual(h.throttled("429 Too Many Requests"), true);
+assert.strictEqual(h.throttled("error: rate limit exceeded, retrying"), true);
+assert.strictEqual(h.throttled("Rate-Limit reached"), true);
+assert.strictEqual(h.throttled("quota exceeded for this model"), true);
+assert.strictEqual(h.throttled("→ Read calc.py\n← Edit calc.py\nran 12 tests, 12 passed"), false, "ordinary output is not a throttle");
+assert.strictEqual(h.throttled("return 429 if the queue is full"), false, "a bare status code in workspace text is not a throttle");
 
 const empty = mkDb("empty.db");
 empty.db.close();

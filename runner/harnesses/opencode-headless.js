@@ -25,6 +25,13 @@ const fail = (msg) => {
   throw new Error(`opencode-headless: ${msg}`);
 };
 
+// Heuristic, and deliberately narrow: a bare "429" shows up in ordinary output,
+// so only a provider's own words count. False positives are the cheap direction
+// (a run is dropped and re-run) and false negatives publish a throttled run as a
+// model failure, which is the expensive one.
+const THROTTLED = /rate.?limit|too many requests|quota exceeded/i;
+const throttled = (text) => THROTTLED.test(text);
+
 // opencode's model id may contain "/" (openai/gpt-oss-120b); the config key is
 // what --model takes after the provider prefix, so it has to be one segment.
 const alias = (modelId) => modelId.replace(/[^A-Za-z0-9._-]/g, "-");
@@ -129,15 +136,22 @@ function parseSessions(dbPath) {
       );
     } else if (has("session_message")) {
       schema = "session_message";
-      for (const r of db.prepare("select data from session_message").all()) {
+      // In V2 the kind is the table's own column ('assistant', 'user', 'idle',
+      // 'system', ...) and an assistant row carries its parts in data.content:
+      // elements of type reasoning/text/tool, a tool element having name and
+      // state.input. Reading data.type or data.role instead counts nothing, which
+      // is how the first live run reported 13k tokens and zero turns.
+      turns = db.prepare("select count(*) c from session_message where type='assistant'").get().c;
+      for (const r of db.prepare("select data from session_message where type='assistant'").all()) {
         let o;
         try {
           o = JSON.parse(r.data);
         } catch {
           continue;
         }
-        if (o.role === "assistant") turns++;
-        if (o.type === "tool") calls.push({ tool: o.tool, file: o.state?.input?.filePath });
+        for (const el of Array.isArray(o.content) ? o.content : []) {
+          if (el?.type === "tool") calls.push({ tool: el.name, file: el.state?.input?.filePath });
+        }
       }
     }
 
@@ -193,19 +207,34 @@ async function run({ job, taskMd, system, provider, modelId, timeoutS = DEFAULT_
   });
   const db = path.join(runDir, "data", "opencode.db");
   const usage = fs.existsSync(db) ? parseSessions(db) : null;
-  const tail = `${r.stdout || ""}${r.stderr || ""}`.slice(-500);
+  const out = `${r.stdout || ""}\n${r.stderr || ""}`.replace(/\x1b\[[0-9;]*[A-Za-z]/g, "");
+  const lines = out
+    .split("\n")
+    .map((l) => l.trim())
+    .filter(Boolean)
+    .slice(-6);
+  // A run the provider throttled is the provider's fault, not the model's: run.js
+  // already drops provider errors for that reason, and a free tier that meters
+  // 8000 tokens/minute cannot serve a harness that does not pace itself. The
+  // signature is looked for in the CLI's own output, never in the workspace.
+  if (throttled(out)) {
+    fail(`dropped: the provider rate-limited the harness (last output: ${lines.join(" | ").slice(0, 300)})`);
+  }
   if (!usage || !usage.tokens_in) {
     fail(
       `refusing to score an uncounted run (exit ${r.status}; database ${fs.existsSync(db) ? "read, no tokens" : "missing"}); ` +
-        `run dir holds ${fs.existsSync(runDir) ? fs.readdirSync(runDir).join(",") : "nothing"}; last output: ${tail}`
+        `run dir holds ${fs.existsSync(runDir) ? fs.readdirSync(runDir).join(",") : "nothing"}; last output: ${lines.join(" | ")}`
     );
   }
   fs.rmSync(runDir, { recursive: true, force: true });
   // Say where the number came from, on every run: the schema is an internal
-  // interface, and a silent zero would look like a cheap model.
+  // interface, and a silent zero would look like a cheap model. The tail is what
+  // makes a failed grade arguable instead of a guess -- a throttled provider and a
+  // wrong edit look identical in a token count.
   console.log(
     `   oc: schema ${usage.schema}, ${usage.sessions} session(s), in=${usage.tokens_in} out=${usage.tokens_out} turns=${usage.turns} tools=${usage.tool_calls}`
   );
+  if (lines.length) console.log(`   oc tail: ${lines.join(" | ").slice(0, 700)}`);
   return {
     tokens_in: usage.tokens_in,
     tokens_out: usage.tokens_out,
@@ -218,4 +247,4 @@ async function run({ job, taskMd, system, provider, modelId, timeoutS = DEFAULT_
   };
 }
 
-module.exports = { run, OPENCODE_VERSION, IMAGE, alias, buildConfig, opencodeArgs, parseSessions };
+module.exports = { run, OPENCODE_VERSION, IMAGE, alias, buildConfig, opencodeArgs, parseSessions, throttled };
