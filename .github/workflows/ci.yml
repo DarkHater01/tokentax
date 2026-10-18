@@ -19,7 +19,10 @@ jobs:
       - run: node runner/test_reference_cost.js
       - run: node runner/test_harness.js
       - run: node runner/test_opencode_harness.js
+      - run: node runner/test_badge.js
       - run: node runner/test_score.js
+      # The one command the README tells a visitor to run must work.
+      - run: node runner/demo.js
       # The fixture table in the README is generated, not typed: rebuild it from the
       # mock run and fail if the committed block differs.
       - name: the README fixture table matches the mock run

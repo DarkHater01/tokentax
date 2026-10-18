@@ -88,7 +88,8 @@ jobs:
           wait "$pid" || echo "run.js exited nonzero; scoring whatever completed"
           node runner/score.js || TOKENTAX_PARTIAL=1 node runner/score.js
           node runner/leaderboard.js
-          git add data/ README.md
+          node runner/badge.js || echo "badge: skipped (nothing scored); publishing the table anyway"
+          git add data/ README.md docs/badge.json
           git diff --cached --quiet || git commit -m "chore: benchmark results"
           git pull --rebase origin main
           git push
