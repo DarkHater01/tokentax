@@ -53,6 +53,7 @@ assert.strictEqual(u.tokens_out, 200 + 50, "output side = output + reasoning (di
 assert.strictEqual(u.tokens_cache_read, 300, "the cache component stays visible for audit");
 assert.strictEqual(u.turns, 2, "turns are assistant messages");
 assert.strictEqual(u.tool_calls, 3, "tool calls are tool parts");
+assert.deepStrictEqual(u.tools_called, ["write", "edit", "bash"], "the record names which tools ran, in order");
 assert.strictEqual(u.thrash, 1, "a second write to the same file is the same churn mini-loop counts");
 
 // A database the CLI creates fresh is V2-only, with the other table names. The
@@ -78,6 +79,7 @@ assert.strictEqual(v2.tokens_in, 700, "the V2 token columns are the same ones");
 assert.strictEqual(v2.tokens_out, 100, "output + reasoning from the V2 table");
 assert.strictEqual(v2.turns, 2, "turns are the assistant rows; idle and user rows are not turns");
 assert.strictEqual(v2.tool_calls, 2, "tool calls are the tool elements of an assistant row's content");
+assert.deepStrictEqual(v2.tools_called, ["write", "edit"], "the V2 rows name their tools too");
 assert.strictEqual(v2.thrash, 1, "thrash is the same sum over the V2 rows");
 
 // The throttle guard decides whether a run can be published at all.

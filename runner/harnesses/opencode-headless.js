@@ -173,6 +173,9 @@ function parseSessions(dbPath) {
       cost: s.cost,
       turns,
       tool_calls: calls.length,
+      // Which tools, in order: a failed grade reads very differently if the harness
+      // never called a write tool than if it did and wrote the wrong thing.
+      tools_called: [...new Set(calls.map((c) => c.tool).filter(Boolean))],
       thrash,
     };
   } finally {
@@ -211,8 +214,8 @@ async function run({ job, taskMd, system, provider, modelId, timeoutS = DEFAULT_
   const lines = out
     .split("\n")
     .map((l) => l.trim())
-    .filter(Boolean)
-    .slice(-6);
+    .filter((l) => l && !l.startsWith(">"))
+    .slice(-12);
   // A run the provider throttled is the provider's fault, not the model's: run.js
   // already drops provider errors for that reason, and a free tier that meters
   // 8000 tokens/minute cannot serve a harness that does not pace itself. The
@@ -232,7 +235,8 @@ async function run({ job, taskMd, system, provider, modelId, timeoutS = DEFAULT_
   // makes a failed grade arguable instead of a guess -- a throttled provider and a
   // wrong edit look identical in a token count.
   console.log(
-    `   oc: schema ${usage.schema}, ${usage.sessions} session(s), in=${usage.tokens_in} out=${usage.tokens_out} turns=${usage.turns} tools=${usage.tool_calls}`
+    `   oc: schema ${usage.schema}, ${usage.sessions} session(s), in=${usage.tokens_in} out=${usage.tokens_out} turns=${usage.turns} tools=${usage.tool_calls}` +
+      `${usage.tools_called.length ? ` [${usage.tools_called.join(",")}]` : ""}`
   );
   if (lines.length) console.log(`   oc tail: ${lines.join(" | ").slice(0, 700)}`);
   return {
