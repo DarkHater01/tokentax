@@ -1042,5 +1042,41 @@
     "retries": 0,
     "loc": 6,
     "tail": ""
+  },
+  {
+    "harness": "mini-loop",
+    "model": "openai/gpt-oss-20b",
+    "task": "05-dedupe-keep-green",
+    "variant": "minimal",
+    "rep": 2,
+    "error": null,
+    "env_hash": "002b3a969c9e",
+    "passed": true,
+    "tokens_in": 18956,
+    "tokens_out": 1784,
+    "turns": 10,
+    "tool_calls": 9,
+    "thrash": 5,
+    "retries": 3,
+    "loc": 7,
+    "tail": ""
+  },
+  {
+    "harness": "mini-loop",
+    "model": "openai/gpt-oss-20b",
+    "task": "05-dedupe-keep-green",
+    "variant": "minimal",
+    "rep": 3,
+    "error": null,
+    "env_hash": "002b3a969c9e",
+    "passed": true,
+    "tokens_in": 6039,
+    "tokens_out": 623,
+    "turns": 4,
+    "tool_calls": 3,
+    "thrash": 0,
+    "retries": 3,
+    "loc": 6,
+    "tail": ""
   }
 ]
