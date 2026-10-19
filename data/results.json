@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-10-18T06:00:05.561Z",
+  "generated_at": "2026-10-19T13:42:41.619Z",
   "reps": 3,
   "qualify_threshold": 0.6,
   "prices_asof": "2026-10-16",
@@ -22,41 +22,41 @@
           "01-fix-failing-test": {
             "pass_at_1": 1,
             "consistent": true,
-            "tax": 1.58,
+            "tax": 1.59,
             "cost_per_task": 0,
             "thrash": 0
           },
           "02-add-cli-flag": {
             "pass_at_1": 1,
             "consistent": true,
-            "tax": 2.87,
+            "tax": 2.78,
             "cost_per_task": 0,
             "thrash": 0
           },
           "03-rename-symbol": {
             "pass_at_1": 1,
             "consistent": true,
-            "tax": 1.61,
+            "tax": 1.6,
             "cost_per_task": 0,
             "thrash": 0
           },
           "04-fix-bug-2-files": {
             "pass_at_1": 1,
             "consistent": true,
-            "tax": 2.67,
+            "tax": 2.54,
             "cost_per_task": 0,
             "thrash": 0
           },
           "05-dedupe-keep-green": {
-            "pass_at_1": 0.67,
-            "consistent": false,
-            "tax": 3.44,
+            "pass_at_1": 1,
+            "consistent": true,
+            "tax": 2.72,
             "cost_per_task": 0,
             "thrash": 0
           }
         },
-        "pass_at_1": 0.93,
-        "tax": 2.43,
+        "pass_at_1": 1,
+        "tax": 2.25,
         "cost_per_task": 0,
         "thrash": 0
       },
@@ -79,39 +79,39 @@
           "03-rename-symbol": {
             "pass_at_1": 1,
             "consistent": true,
-            "tax": 2.04,
+            "tax": 2.06,
             "cost_per_task": 0,
             "thrash": 0
           },
           "04-fix-bug-2-files": {
             "pass_at_1": 1,
             "consistent": true,
-            "tax": 2.48,
+            "tax": 2.52,
             "cost_per_task": 0,
             "thrash": 0
           },
           "05-dedupe-keep-green": {
             "pass_at_1": 1,
             "consistent": true,
-            "tax": 2.23,
+            "tax": 2.29,
             "cost_per_task": 0,
             "thrash": 0
           }
         },
         "pass_at_1": 1,
-        "tax": 2.17,
+        "tax": 2.2,
         "cost_per_task": 0,
         "thrash": 0
       },
       "minimality_delta": {
         "per_task": {
-          "01-fix-failing-test": -0.08,
-          "02-add-cli-flag": 0.41,
-          "03-rename-symbol": -0.43,
-          "04-fix-bug-2-files": 0.19,
-          "05-dedupe-keep-green": 1.21
+          "01-fix-failing-test": -0.07,
+          "02-add-cli-flag": 0.32,
+          "03-rename-symbol": -0.46,
+          "04-fix-bug-2-files": 0.02,
+          "05-dedupe-keep-green": 0.43
         },
-        "overall": 0.26
+        "overall": 0.05
       }
     },
     {
@@ -123,41 +123,41 @@
           "01-fix-failing-test": {
             "pass_at_1": 1,
             "consistent": true,
-            "tax": 1.66,
+            "tax": 1.7,
             "cost_per_task": 0,
             "thrash": 0
           },
           "02-add-cli-flag": {
             "pass_at_1": 1,
             "consistent": true,
-            "tax": 2.67,
+            "tax": 1.83,
             "cost_per_task": 0,
             "thrash": 0
           },
           "03-rename-symbol": {
             "pass_at_1": 1,
             "consistent": true,
-            "tax": 1.67,
+            "tax": 2.17,
             "cost_per_task": 0,
             "thrash": 0
           },
           "04-fix-bug-2-files": {
             "pass_at_1": 1,
             "consistent": true,
-            "tax": 2.22,
+            "tax": 1.84,
             "cost_per_task": 0,
             "thrash": 0
           },
           "05-dedupe-keep-green": {
             "pass_at_1": 1,
             "consistent": true,
-            "tax": 8.93,
+            "tax": 9.16,
             "cost_per_task": 0,
             "thrash": 0
           }
         },
         "pass_at_1": 1,
-        "tax": 3.43,
+        "tax": 3.34,
         "cost_per_task": 0,
         "thrash": 0
       },
@@ -173,46 +173,46 @@
           "02-add-cli-flag": {
             "pass_at_1": 1,
             "consistent": true,
-            "tax": 3.35,
+            "tax": 1.99,
             "cost_per_task": 0,
             "thrash": 0
           },
           "03-rename-symbol": {
             "pass_at_1": 1,
             "consistent": true,
-            "tax": 1.36,
+            "tax": 1.69,
             "cost_per_task": 0,
             "thrash": 0
           },
           "04-fix-bug-2-files": {
             "pass_at_1": 1,
             "consistent": true,
-            "tax": 1.39,
+            "tax": 1.37,
             "cost_per_task": 0,
             "thrash": 0
           },
           "05-dedupe-keep-green": {
             "pass_at_1": 1,
             "consistent": true,
-            "tax": 3.23,
+            "tax": 5.08,
             "cost_per_task": 0,
             "thrash": 0
           }
         },
         "pass_at_1": 1,
-        "tax": 2.22,
+        "tax": 2.38,
         "cost_per_task": 0,
         "thrash": 0
       },
       "minimality_delta": {
         "per_task": {
-          "01-fix-failing-test": -0.09,
-          "02-add-cli-flag": -0.68,
-          "03-rename-symbol": 0.31,
-          "04-fix-bug-2-files": 0.83,
-          "05-dedupe-keep-green": 5.7
+          "01-fix-failing-test": -0.05,
+          "02-add-cli-flag": -0.16,
+          "03-rename-symbol": 0.48,
+          "04-fix-bug-2-files": 0.47,
+          "05-dedupe-keep-green": 4.08
         },
-        "overall": 1.21
+        "overall": 0.96
       }
     }
   ]

@@ -35,12 +35,12 @@ That screencast is [`docs/record-demo.sh`](docs/record-demo.sh): a **scripted** 
 ## Live leaderboard
 
 <!-- LEADERBOARD:START -->
-**Last scored 2026-10-18** · harness `mini-loop` · 5 tasks × 3 reps · variants: vanilla, minimal · env `fa41c6f07163`
+**Last scored 2026-10-19** · harness `mini-loop` · 5 tasks × 3 reps · variants: vanilla, minimal · env `fa41c6f07163`
 
 | # | harness | model | `pass@1` | `tax` | `$/task` | `tax` with the minimal prompt | waste it removes |
 |---|---|---|---|---|---|---|---|
-| 1 | `mini-loop` | `openai/gpt-oss-120b` | 0.93 | **2.43×** | $0 | 2.17× | 11% |
-| 2 | `mini-loop` | `openai/gpt-oss-20b` | 1.00 | **3.43×** | $0 | 2.22× | 35% |
+| 1 | `mini-loop` | `openai/gpt-oss-120b` | 1.00 | **2.25×** | $0 | 2.2× | 2% |
+| 2 | `mini-loop` | `openai/gpt-oss-20b` | 1.00 | **3.34×** | $0 | 2.38× | 29% |
 
 Ranked by waste. `tax = 3×` means the agent spent three times what the task actually needed. The table is generated: it is never edited by hand.
 <!-- LEADERBOARD:END -->
