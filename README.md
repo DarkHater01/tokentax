@@ -4,6 +4,7 @@
 [![median token tax](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2FDarkHater01%2Ftokentax%2Fmain%2Fdocs%2Fbadge.json)](docs/badge.json)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Node >=22.13](https://img.shields.io/badge/node-%3E%3D22.13-informational)](https://nodejs.org)
+[![live leaderboard](https://img.shields.io/badge/live-leaderboard-7ec8a9)](https://darkhater01.github.io/tokentax/)
 [![dependencies: 0](https://img.shields.io/badge/dependencies-0-brightgreen)](runner)
 
 **Every agent benchmark ranks how smart a model is. None ranks how much of the bill was waste.**
@@ -178,11 +179,12 @@ node runner/score.js    # data/raw.json -> data/results.json
 
 Swapping providers is config-only: `runner/providers.json` maps a name to a base URL, a key env var, and a minimum gap between requests (`paceMs`, which is how a run stays under a free tier's tokens-per-minute cap). The transport speaks plain OpenAI function-calling.
 
-Only the `mini-loop` harness is implemented today. `opencode-headless` and `claude-code-headless` are on the roadmap (M3) — that is where the harness axis gets interesting.
+Only the `mini-loop` harness is scored today. `opencode-headless` is implemented and verified end to end but not yet scored (see *The harness axis* above); `claude-code-headless` is still open. That is where the harness axis gets interesting.
 
 ## Layout
 
 ```
+index.html               the live leaderboard page (GitHub Pages, reads data/results.json)
 runner/run.js            fixtures or a real agent harness
 runner/score.js          raw -> results.json; validates everything ("this file is the check")
 runner/reference_cost.js rebuilds necessary_tokens from each task's own files (measured, not typed)

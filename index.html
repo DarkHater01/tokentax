@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TokenTax — how much of an agent's token bill is waste?</title>
+<meta name="description" content="TokenTax ranks model × harness by waste: tax = tokens spent ÷ tokens the task actually needs, for runs that pass the tests. Generated from real runs.">
+<meta property="og:title" content="TokenTax — the token bill you didn't need to pay">
+<meta property="og:description" content="tax = tokens spent ÷ tokens needed. Ranked per model × harness, from real runs, never typed by hand.">
+<meta property="og:image" content="https://darkhater01.github.io/tokentax/docs/social-preview.png">
+<meta name="twitter:card" content="summary_large_image">
+<style>
+  :root { color-scheme: dark; }
+  body { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; margin: 2rem auto; max-width: 960px; padding: 0 1rem; color: #e6e6e6; background: #111; line-height: 1.5; }
+  h1 { font-size: 1.4rem; } h1 span { color: #7ec8a9; }
+  p.sub { color: #999; }
+  table { border-collapse: collapse; width: 100%; margin-top: 1.5rem; font-size: .9rem; }
+  th, td { padding: .5rem .6rem; border-bottom: 1px solid #333; text-align: right; }
+  th:first-child, td:first-child { text-align: left; }
+  th { color: #888; font-weight: 600; text-transform: uppercase; font-size: .72rem; letter-spacing: .05em; }
+  tr:hover { background: #1b1b1b; }
+  .good { color: #7ec8a9; } .bad { color: #e07a7a; } .warn { color: #d8b45a; }
+  .null { color: #555; }
+  code { color: #b39ddb; }
+  footer { margin-top: 2rem; color: #666; font-size: .8rem; }
+  a { color: #7ec8a9; }
+  details { margin-top: 1.5rem; } summary { cursor: pointer; color: #999; }
+</style>
+</head>
+<body>
+<h1>💸 <span>TokenTax</span> — how much of the bill was waste?</h1>
+<p class="sub"><code>tax</code> = (tokens in + tokens out) ÷ tokens the task actually needs. Only runs that pass the tests count.
+<b>waste it removes</b> = the same model, same harness, with the minimalism prompt: the difference is only the prompt.</p>
+<div id="app">loading…</div>
+<footer>
+  Generated from <a href="https://github.com/DarkHater01/tokentax/blob/main/data/results.json">data/results.json</a> by the weekly bench job — never typed by hand.
+  Contest a reference via PR. Sibling: <a href="https://darkhater01.github.io/slopbench/">SlopBench</a> measures wasted <em>code</em>.
+</footer>
+<script>
+const cls = (v) => v == null ? "null" : v <= 2 ? "good" : v <= 3 ? "warn" : "bad";
+const tax = (v) => v == null ? '<span class="null">—</span>' : `<span class="${cls(v)}">${v}×</span>`;
+const saved = (min, van) => min == null || van == null ? '<span class="null">—</span>' : `${Math.round(((van - min) / van) * 100)}%`;
+
+fetch("data/results.json").then((r) => {
+  if (!r.ok) throw new Error(r.status);
+  return r.json();
+}).then((d) => {
+  const done = d.entries
+    .filter((e) => e.status === "complete" && e.vanilla && e.minimal)
+    .sort((a, b) => a.vanilla.tax - b.vanilla.tax);
+  const rows = d.entries.length === done.length
+    ? ""
+    : d.entries.filter((e) => !done.includes(e)).map((e) => `<tr>
+        <td>${e.harness}</td><td>${e.model}</td>
+        <td colspan="5" class="null">not scored yet (${e.status})</td>
+      </tr>`).join("");
+  const body = done.map((e) => `<tr>
+    <td>${e.harness}</td>
+    <td>${e.model}</td>
+    <td>${e.vanilla.pass_at_1.toFixed(2)}</td>
+    <td><b>${tax(e.vanilla.tax)}</b></td>
+    <td>${e.vanilla.cost_per_task == null ? '<span class="null">—</span>' : "$" + e.vanilla.cost_per_task}</td>
+    <td>${tax(e.minimal.tax)}</td>
+    <td>${saved(e.minimal.tax, e.vanilla.tax)}</td>
+  </tr>`).join("") + rows;
+
+  const tasks = Object.keys(d.tasks || {});
+  const perTask = done.length ? `
+    <details><summary>tax per task — and the token budget each task actually needs</summary>
+    <table>
+      <thead><tr><th>model</th>${tasks.map((t) => `<th>${t}</th>`).join("")}</tr></thead>
+      <tbody>${done.map((e) => `<tr><td>${e.model}</td>${tasks.map((t) =>
+        `<td>${tax(e.vanilla.per_task?.[t]?.tax)}</td>`).join("")}</tr>`).join("")}</tbody>
+    </table>
+    <p class="sub">needed: ${tasks.map((t) => `${t} ${(d.tasks[t] || 0).toLocaleString("en-US")}`).join(" · ")} tokens</p>
+    </details>` : "";
+
+  const stamp = [
+    `last scored ${String(d.generated_at).slice(0, 10)}`,
+    `${tasks.length} tasks × ${d.reps} reps`,
+    d.harness_env ? `env ${d.harness_env}` : "",
+    d.errors ? `${d.errors} provider errors excluded` : "",
+  ].filter(Boolean).join(" · ");
+
+  document.getElementById("app").innerHTML = `
+    <table>
+      <thead><tr>
+        <th>harness</th><th>model</th><th>pass@1</th><th>tax</th><th>$/task</th>
+        <th>tax with the minimal prompt</th><th>waste it removes</th>
+      </tr></thead>
+      <tbody>${body}</tbody>
+    </table>
+    <p class="sub">${stamp}. Ranked by waste: <code>tax = 3×</code> means the agent spent three times what the task needed.</p>
+    ${perTask}`;
+}).catch(() => {
+  document.getElementById("app").textContent =
+    "failed to load data/results.json — serve this directory over HTTP (python3 -m http.server)";
+});
+</script>
+</body>
+</html>
