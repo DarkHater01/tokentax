@@ -41,7 +41,7 @@ const cls = (v) => v == null ? "null" : v <= 2 ? "good" : v <= 3 ? "warn" : "bad
 const tax = (v) => v == null ? '<span class="null">—</span>' : `<span class="${cls(v)}">${v}×</span>`;
 const saved = (min, van) => min == null || van == null ? '<span class="null">—</span>' : `${Math.round(((van - min) / van) * 100)}%`;
 
-fetch("data/results.json").then((r) => {
+fetch("data/results.json", { cache: "no-store" }).then((r) => {
   if (!r.ok) throw new Error(r.status);
   return r.json();
 }).then((d) => {
