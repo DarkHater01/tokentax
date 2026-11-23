@@ -36,7 +36,7 @@ That screencast is [`docs/record-demo.sh`](docs/record-demo.sh): a **scripted** 
 ## Live leaderboard
 
 <!-- LEADERBOARD:START -->
-**Last scored 2026-11-16** · harness `mini-loop` · 5 tasks × 3 reps · variants: vanilla, minimal · env `fa41c6f07163`
+**Last scored 2026-11-23** · harness `mini-loop` · 5 tasks × 3 reps · variants: vanilla, minimal · env `fa41c6f07163`
 
 | # | harness | model | `pass@1` | `tax` | `$/task` | `tax` with the minimal prompt | waste it removes |
 |---|---|---|---|---|---|---|---|
